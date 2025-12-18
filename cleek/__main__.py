@@ -33,10 +33,13 @@ def load_tasks() -> 'ModuleType':
 
     root_path = os.environ.get('CLEEKS_PATH')
     if root_path is not None:
-        root_path = parent_path = Path(root_path).resolve(strict=True)
-    else:
-        parent_path = Path().resolve(strict=True)
-        root_path = Path('/')
+        root_path = Path(root_path).resolve(strict=True)
+        cleeks = try_import(root_path) or try_import(root_path / '__init__.py')
+        if cleeks is None:
+            raise FileNotFoundError('Cannot find cleeks')
+        return cleeks
+    parent_path = Path().resolve(strict=True)
+    root_path = Path('/')
     while True:
         cleeks = try_import(parent_path / 'cleeks.py') or try_import(
             parent_path / 'cleeks/__init__.py'
