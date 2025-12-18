@@ -121,6 +121,16 @@ class _OptionRegistry:
         return self.assign(_UPPER, dest)
 
 
+class _Unsupported(ValueError):
+    pass
+
+
+class _UnsupportedDefault(_Unsupported):
+    def __init__(self, default: object) -> None:
+        self.default: Final = default
+        super().__init__(f'unsupported default {default!r}')
+
+
 @final
 class _ArgumentParserBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
@@ -170,7 +180,7 @@ class _ArgumentParserBuilder:
         elif isinstance(default, type):
             self._pk_literal_type_default_type(param, type, choices)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     def _pk_literal_int(self, param: Parameter, choices: Iterable[int]) -> None:
         self._pk_literal_type(param, int, choices)
@@ -196,7 +206,7 @@ class _ArgumentParserBuilder:
         elif (args := try_as(str)) is not None:
             self._pk_literal_str(param, args)
         else:
-            raise ValueError('unsupported literal')
+            raise _Unsupported('unsupported literal')
 
     # bool #
 
@@ -226,7 +236,7 @@ class _ArgumentParserBuilder:
         elif default is True:
             self._pk_bool_default_true(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     def _pk_optional_bool_default_none(self, param: Parameter) -> None:
         options = self._options
@@ -247,18 +257,17 @@ class _ArgumentParserBuilder:
         elif default is True:
             self._pk_bool_default_true(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     # float #
 
     def _pk_float_default_float(self, param: Parameter) -> None:
         dest = param.name
-        default = param.default
         self._add_argument(
             *self._assign_lower(dest),
             type=float,
-            default=default,
-            help=f'default: {default}',
+            default=param.default,
+            help='default: %(default)s',
             dest=dest,
         )
 
@@ -272,7 +281,7 @@ class _ArgumentParserBuilder:
         elif isinstance(default, float):
             self._pk_float_default_float(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     def _pk_optional_float(self, param: Parameter) -> None:
         dest = param.name
@@ -281,7 +290,7 @@ class _ArgumentParserBuilder:
             *self._assign_lower(dest),
             type=float,
             default=default,
-            help=None if default is None else f'default: {default}',
+            help=None if default is None else 'default: %(default)s',
             dest=dest,
         )
 
@@ -292,12 +301,11 @@ class _ArgumentParserBuilder:
 
     def _pk_int_default_int(self, param: Parameter) -> None:
         dest = param.name
-        default = param.default
         self._add_argument(
             *self._options.assign_lower(dest),
             type=int,
-            default=default,
-            help=f'default: {default}',
+            default=param.default,
+            help='default: %(default)s',
             dest=dest,
         )
 
@@ -308,7 +316,7 @@ class _ArgumentParserBuilder:
         elif isinstance(default, int):
             self._pk_int_default_int(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     def _pk_optional_int(self, param: Parameter) -> None:
         dest = param.name
@@ -342,7 +350,7 @@ class _ArgumentParserBuilder:
         elif default == param.empty:
             self._pk_str_default_empty(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     def _pk_optional_str_default_str(self, param: Parameter) -> None:
         dest = param.name
@@ -369,7 +377,7 @@ class _ArgumentParserBuilder:
         elif default == param.empty:
             self._pk_optional_str_default_empty(param)
         else:
-            raise ValueError(f'unsupported default {default!r}')
+            raise _UnsupportedDefault(default)
 
     # - #
 
@@ -394,7 +402,7 @@ class _ArgumentParserBuilder:
         elif annotation == str | None:
             self._pk_optional_str(param)
         else:
-            raise ValueError(f'unsupported annotation {annotation!r}')
+            raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # VAR_POSITIONAL #
 
@@ -419,7 +427,7 @@ class _ArgumentParserBuilder:
         elif annotation is trio.Path:
             self._vp_trio_path(param)
         else:
-            raise ValueError(f'unsupported annotation {annotation!r}')
+            raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # -- #
 
@@ -430,12 +438,30 @@ class _ArgumentParserBuilder:
             case param.VAR_POSITIONAL:
                 self._vp(param)
             case _ as kind:
-                raise ValueError(f'unsupported kind {kind!r}')
+                raise _Unsupported(f'unsupported kind {kind!r}')
 
     def build(self, obj: '_IntrospectableCallable') -> None:
-        params = signature(obj).parameters.values()
-        for param in params:
-            self._add_param(param)
+        sig = signature(obj)
+        try:
+            for param in sig.parameters.values():
+                self._add_param(param)
+        except _Unsupported as error:
+            import sys
+            import traceback
+            from rich import print
+            from rich.panel import Panel
+
+            print(traceback.format_exc(), file=sys.stderr)
+
+            print(
+                Panel(
+                    f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function siguature below and I'll add support:\n\n{sig}\n",
+                    title=':warning: Unsupported Task Function :warning:',
+                ),
+                file=sys.stderr,
+            )
+
+            raise SystemExit(1) from error
 
 
 def make_parser(task: Task) -> ArgumentParser:
