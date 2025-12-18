@@ -4,6 +4,8 @@
 
 
 ```python
+from cleek import task
+
 @task
 def binary_op(x: int, y: int, op: Literal['add', 'sub'] = 'add') -> None:
     print(x, op, y)
