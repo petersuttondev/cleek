@@ -27,6 +27,14 @@ options:
 
 ## Install
 
+### PyPI
+
+```ShellSession
+$ pip install cleek
+```
+
+### GitHub
+
 ```ShellSession
 $ git clone https://github.com/petersuttondev/cleek.git
 $ pip install ./cleek
