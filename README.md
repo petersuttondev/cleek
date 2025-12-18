@@ -2,8 +2,7 @@
 
 <p align=center><b>A simple task runner that generates command line interfaces</b></p>
 
-
-```python
+```Python
 from cleek import task
 
 @task
@@ -13,7 +12,7 @@ def binary_op(x: int, y: int, op: Literal['add', 'sub'] = 'add') -> None:
 
 <p align=center><b>⬇️ Becomes ⬇️</b></p>
 
-```shell
+```ShellSession
 $ clk binary-op -h
 usage: clk binary-op [-h] [-o {add,sub}] x y
 
@@ -28,7 +27,7 @@ options:
 
 ## Install
 
-```shell
+```ShellSession
 $ git clone https://github.com/petersuttondev/cleek.git
 $ pip install ./cleek
 ```
@@ -37,7 +36,7 @@ $ pip install ./cleek
 
 1. Create a `cleeks.py` file in the root of your project and add tasks
 
-```python
+```Python
 from cleek import task
 
 @task
@@ -47,7 +46,7 @@ def greet(name: str) -> None:
 
 2. Run `clk` from anywhere inside your project to see your tasks.
 
-```shell
+```ShellSession
 $ clk
 ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Task  ┃ Usage               ┃
@@ -58,7 +57,7 @@ $ clk
 
 3. Run `clk <task> -h` to print a task's help.
 
-```shell
+```ShellSession
 $ clk greet
 usage: clk greet [-h] name
 
@@ -71,7 +70,7 @@ options:
 
 Finally, run a task:
 
-```shell
+```ShellSession
 $ clk greet Peter
 Hello, Peter!
 ```
@@ -82,14 +81,14 @@ Hello, Peter!
 
 * Keyword `bool` with `False` or `True` default
 
-```python
+```Python
 def foo(a: bool = False): ...
 def foo(a: bool = True): ...
 ```
 
 * Keyword optional `bool` with `False`, `True`, or `None` default
 
-```python
+```Python
 def foo(a: bool | None = False): ...
 def foo(a: bool | None = True): ...
 def foo(a: bool | None = None): ...
@@ -99,32 +98,32 @@ def foo(a: bool | None = None): ...
 
 * Positional `str`
 
-```python
+```Python
 def foo(a: str): ...
 ```
 
 * Positional optional `str`
 
-```python
+```Python
 def foo(a: str | None): ...
 ```
  
 * Keyword `str` with `str` default
 
-```python
+```Python
 def foo(a: str = 'a'): ...
 ```
 
 * Keyword optional `str` with `str` or `None` default
 
-```python
+```Python
 def foo(a: str | None = 'a'): ...
 def foo(a: str | None = None): ...
 ```
 
 * Variadic positional `str`
 
-```python
+```Python
 def foo(*a: str): ...
 ```
 
@@ -132,19 +131,19 @@ def foo(*a: str): ...
 
 * Positional `int`
 
-```python
+```Python
 def foo(a: int): ...
 ```
 
 * Keyword `int` with `int` default
 
-```python
+```Python
 def foo(a: int = 1): ...
 ```
 
 * Keyword optional `int` with `int` or `None` default
 
-```python
+```Python
 def foo(a: int | None = 1): ...
 def foo(a: int | None = None): ...
 ```
@@ -153,19 +152,19 @@ def foo(a: int | None = None): ...
 
 * Positional `float`
 
-```python
+```Python
 def foo(a: float): ...
 ```
 
 * Keyword `float` with `float` default
 
-```python
+```Python
 def foo(a: float = 1.0): ...
 ```
 
 * Keyword optional `float` with `float` or `None` default
 
-```python
+```Python
 def foo(a: float | None = 1.0): ...
 def foo(a: float | None = None): ...
 ```
@@ -174,37 +173,37 @@ def foo(a: float | None = None): ...
 
 * Positional `int` literal
 
-```python
+```Python
 @task
-def foo(a: Literal[1, 2, 3]) -> None: ...
+def foo(a: Literal[1, 2, 3]): ...
 ```
 
 * Positional `str` literal
 
-```python
+```Python
 @task
-def foo(a: Literal['a', 'b', 'c']) -> None: ...
+def foo(a: Literal['a', 'b', 'c']): ...
 ```
 
 * Keyword `int` literal with `int` default
 
-```python
+```Python
 @task
-def foo(a: Literal[1, 2, 3] = 1) -> None: ...
+def foo(a: Literal[1, 2, 3] = 1): ...
 ```
 
 * Keyword `str` literal with `str` default
 
-```python
+```Python
 @task
-def foo(a: Literal['a', 'b', 'c'] = 'a') -> None: ...
+def foo(a: Literal['a', 'b', 'c'] = 'a'): ...
 ```
 
 ### Misc
 
 * Variadic positional `pathlib.Path`
 
-```python
+```Python
 from pathlib import Path
 
 @task
@@ -213,9 +212,22 @@ def foo(*a: Path): ...
 
 * Variadic positional `trio.Path`
 
-```python
+```Python
 from trio import Path
 
 @task
 def foo(*a: Path): ...
 ```
+
+## Shell Completion
+
+`clk --completion` prints all task names to stdout.
+
+### zsh
+
+```Shell
+_complete_clk() {
+    reply=($(clk --completion))
+}
+
+compctl -K _complete_clk + -f clk
