@@ -77,6 +77,8 @@ Hello, Peter!
 
 ## Supported Parameters
 
+If you get an error saying your task's parameters are not supported, open an issue containing the function signature and I'll add support.
+
 ### `bool`
 
 * Keyword `bool` with `False` or `True` default
