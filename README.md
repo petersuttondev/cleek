@@ -219,6 +219,22 @@ from trio import Path
 def foo(*a: Path): ...
 ```
 
+## Async Support
+
+Your tasks can be `async` functions:
+
+```Python
+from cleek import task
+import trio
+
+@task
+async def sleep(duration: float = 1.0) -> None:
+    print(f'Sleeping for {duration} seconds')
+    await trio.sleep(duration)
+```
+
+At the moment, `trio` is the only supported event loop. If want to use another event loop (I'm guessing `asyncio`), open an issue and I'll add it.
+
 ## Finding Tasks
 
 1. If the environmental variable `CLEEKS_PATH` is set, `clk` treats the value as a path and attempts to load it. If the load fails, `clk` fails.
