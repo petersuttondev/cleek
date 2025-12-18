@@ -219,6 +219,12 @@ from trio import Path
 def foo(*a: Path): ...
 ```
 
+## Finding Tasks
+
+1. If the environmental variable `CLEEKS_PATH` is set, `clk` treats the value as a path and attempts to load it. If the load fails, `clk` fails.
+
+2. `clk` searches upwards from the current working directory towards the root directory `/`, looking for a `cleeks.py` script or a `cleeks` package. A script takes precedence over a package if both are found in the same directory.
+
 ## Shell Completion
 
 `clk --completion` prints all task names to stdout.
