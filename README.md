@@ -1,6 +1,6 @@
 ![Cleek](.github/logo.png)
 
-**A Simple task runner generates command line interfaces**
+**A Simple task runner that generates command line interfaces**
 
 Generates command line interfaces from your task function's type hints. For example;
 
