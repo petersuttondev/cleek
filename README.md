@@ -75,9 +75,116 @@ $ clk greet Peter
 Hello, Peter!
 ```
 
+## Customizing Tasks
+
+* Set a task's name:
+
+```Python
+from cleek import task
+
+@task('bar')
+def foo() -> None:
+    print('foo function, bar task')
+```
+
+```ShellSession
+$ clk bar
+foo function, bar task
+```
+
+* Set a task's group:
+
+```Python
+from cleek import task
+
+@task(group='foo')
+def bar() -> None:
+    print('bar task in the foo group')
+```
+
+```ShellSession
+$ clk foo.bar
+bar task in the foo group
+```
+
+* Set a task's style. Used when listing tasks. See [Rich's Style
+  documentation](https://rich.readthedocs.io/en/stable/style.html) for supported
+  styles.
+
+```Python
+from cleek import task
+
+@task(style='red')
+def foo() -> None:
+    print("I'll be red if you run clk")
+```
+
+* To apply the same customization to many tasks, use `customize()` to create a
+  pre-configured version of the `task` decorator.
+
+```Python
+from cleek import customize
+
+foo_task = customize('foo', style='red')
+
+@foo_task
+def a() -> None: ...
+
+@foo_task
+def b() -> None: ...
+
+bar_task = customize('bar', style='blue')
+
+@bar_task
+def c() -> None: ...
+
+@bar_task
+def d() -> None: ...
+```
+
+```ShellSession
+$ clk
+┏━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Task  ┃ Usage          ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ foo.a │ clk foo.a [-h] │
+│ foo.b │ clk foo.b [-h] │
+│ bar.c │ clk bar.c [-h] │
+│ bar.d │ clk bar.d [-h] │
+└───────┴────────────────┘
+```
+
+## Async Support
+
+Your tasks can be `async` functions:
+
+```Python
+from cleek import task
+import trio
+
+@task
+async def sleep(duration: float = 1.0) -> None:
+    print(f'Sleeping for {duration} seconds')
+    await trio.sleep(duration)
+```
+
+At the moment, `trio` is the only supported event loop. If want to use another
+event loop (I'm guessing `asyncio`), open an issue and I'll add it.
+
+## Finding Tasks
+
+1. If the environmental variable `CLEEKS_PATH` is set, `clk` treats the value
+   as a path and attempts to load it. If the load fails, `clk` fails.
+
+2. `clk` searches upwards from the current working directory towards the root
+   directory `/`, looking for a `cleeks.py` script or a `cleeks` package. A
+   script takes precedence over a package if both are found in the same
+   directory.
+
 ## Supported Parameters
 
-If you get an error saying your task's parameters are not supported, open an issue containing the function signature and I'll add support.
+If you get an error saying your task's parameters are not supported, open an
+issue containing the function signature and I'll add support.
 
 ### `bool`
 
@@ -220,28 +327,6 @@ from trio import Path
 @task
 def foo(*a: Path): ...
 ```
-
-## Async Support
-
-Your tasks can be `async` functions:
-
-```Python
-from cleek import task
-import trio
-
-@task
-async def sleep(duration: float = 1.0) -> None:
-    print(f'Sleeping for {duration} seconds')
-    await trio.sleep(duration)
-```
-
-At the moment, `trio` is the only supported event loop. If want to use another event loop (I'm guessing `asyncio`), open an issue and I'll add it.
-
-## Finding Tasks
-
-1. If the environmental variable `CLEEKS_PATH` is set, `clk` treats the value as a path and attempts to load it. If the load fails, `clk` fails.
-
-2. `clk` searches upwards from the current working directory towards the root directory `/`, looking for a `cleeks.py` script or a `cleeks` package. A script takes precedence over a package if both are found in the same directory.
 
 ## Shell Completion
 
