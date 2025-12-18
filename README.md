@@ -1,8 +1,7 @@
-![Cleek](.github/logo.png)
+<p align=center><img src=".github/logo.png" /></p>
 
-**A Simple task runner that generates command line interfaces**
+<p align=center><b>A simple task runner that generates command line interfaces</b></p>
 
-Generates command line interfaces from your task function's type hints. For example;
 
 ```python
 @task
@@ -10,7 +9,7 @@ def binary_op(x: int, y: int, op: Literal['add', 'sub'] = 'add') -> None:
     print(x, op, y)
 ```
 
-... becomes;
+<p align=center><b>⬇️ Becomes ⬇️</b></p>
 
 ```shell
 $ clk binary-op -h
