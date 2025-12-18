@@ -432,7 +432,7 @@ class _ArgumentParserBuilder:
             case _ as kind:
                 raise ValueError(f'unsupported kind {kind!r}')
 
-    def build(self, obj: _IntrospectableCallable) -> None:
+    def build(self, obj: '_IntrospectableCallable') -> None:
         params = signature(obj).parameters.values()
         for param in params:
             self._add_param(param)

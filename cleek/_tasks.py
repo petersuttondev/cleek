@@ -10,7 +10,7 @@ __all__: _Final = ('Task',)
 @_final
 @_dataclass(frozen=True)
 class Task:
-    impl: _IntrospectableCallable
+    impl: '_IntrospectableCallable'
     name: str
     group: str | None
     style: str | None
