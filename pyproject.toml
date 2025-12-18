@@ -1,0 +1,10 @@
+[project]
+name = "cleek"
+version = "0.0.1"
+dependencies = [
+  "rich",
+  "trio",
+]
+
+[project.scripts]
+clk = "cleek.__main__:main"
