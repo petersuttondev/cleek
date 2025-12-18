@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Final, Protocol, overload
+from typing import Final, Protocol, final, overload
 
 from cleek._tasks import Task as _Task
 
@@ -70,14 +70,16 @@ def task[**P, T](
     return register(_name_from_impl(impl), impl)
 
 
+@final
 class customize:
     def __init__(
         self,
         group: str | None = None,
+        *,
         style: str | None = None,
     ) -> None:
-        self._group = group
-        self._style = style
+        self._group: Final = group
+        self._style: Final = style
 
     @overload
     def __call__[**P, T](

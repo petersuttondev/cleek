@@ -156,3 +156,18 @@ async_task = customize(style='orange')
 async def async_1(a: float) -> None:
     print(f'Sleeping for {a} seconds')
     await trio.sleep(1)
+
+
+@task('renamed')
+def original() -> None:
+    pass
+
+
+@task(group='group')
+def task_in_group() -> None:
+    pass
+
+
+@customize('customized')
+def customized_task() -> None:
+    pass
