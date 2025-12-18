@@ -28,7 +28,7 @@ options:
 
 ```shell
 $ git clone https://github.com/petersuttondev/cleek.git
-$ pip install cleek
+$ pip install ./cleek
 ```
 
 ## Get Started
