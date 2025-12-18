@@ -1,4 +1,4 @@
-<p align=center><img src=".github/logo.png" /></p>
+<p align=center><img src="https://github.com/petersuttondev/cleek/blob/main/.github/logo.png" /></p>
 
 <p align=center><b>A simple task runner that generates command line interfaces</b></p>
 
