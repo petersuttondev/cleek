@@ -70,7 +70,7 @@ options:
 Finally, run a task:
 
 ```shell
-$ clk greet peter
+$ clk greet Peter
 Hello, Peter!
 ```
 
