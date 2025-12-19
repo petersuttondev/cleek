@@ -44,7 +44,7 @@ def uninstall() -> None:
     import subprocess
 
     subprocess.run(
-        ('pip', 'uninstall', '--yes', 'gexport'),
+        ('pip', 'uninstall', '--yes', 'cleek'),
         cwd=_get_project_dir(),
         check=True,
     )
