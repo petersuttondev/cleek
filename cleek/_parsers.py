@@ -317,7 +317,7 @@ class _ArgumentParserBuilder:
     def _pk_int_default_int(self, param: Parameter) -> None:
         dest = param.name
         self._add_argument(
-            *self._options.assign_lower(dest),
+            *self._assign_lower(dest),
             type=int,
             default=param.default,
             help='default: %(default)s',
