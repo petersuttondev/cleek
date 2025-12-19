@@ -1,7 +1,13 @@
 from argparse import ArgumentParser
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from enum import Enum, auto, unique
-from inspect import Parameter, Signature, signature
+from inspect import (
+    Parameter,
+    Signature,
+    iscoroutine,
+    iscoroutinefunction,
+    signature,
+)
 from pathlib import Path
 from typing import (
     Final,
@@ -16,7 +22,7 @@ from typing import (
 import trio
 from typing_inspect import is_literal_type
 
-from ._tasks import Task
+from cleek._tasks import Task
 
 if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
@@ -466,3 +472,32 @@ def make_parser(task: Task) -> ArgumentParser:
     builder = _ArgumentParserBuilder(parser)
     builder.build(task.impl)
     return parser
+
+
+def run(task: Task, task_args: Sequence[str]) -> None:
+    parser = make_parser(task)
+    ns = parser.parse_args(task_args)
+    args: list[object] = []
+
+    for param in signature(task.impl).parameters.values():
+        value = getattr(ns, param.name)
+        if param.kind == param.VAR_POSITIONAL:
+            args.extend(value)
+        else:
+            args.append(value)
+
+    if iscoroutinefunction(task.impl):
+        from functools import partial
+        import trio
+
+        return trio.run(partial(task.impl, *args))
+
+    result = task.impl(*args)
+
+    if iscoroutine(result):
+        import trio
+
+        async def run_result():
+            return await result
+
+        return trio.run(run_result)

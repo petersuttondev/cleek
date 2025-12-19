@@ -2,8 +2,6 @@ import sys
 from types import TracebackType
 from typing import TYPE_CHECKING, Final
 
-from cleek._parsers import UnsupportedSignature
-
 if TYPE_CHECKING:
     from pathlib import Path
     from types import ModuleType
@@ -80,6 +78,7 @@ def _excepthook(
         traceback: TracebackType,
 ) -> None:
     _prev_excepthook(type, value, traceback)
+    from cleek._parsers import UnsupportedSignature
 
     if not isinstance(value, UnsupportedSignature):
         return
@@ -108,7 +107,7 @@ def main() -> None:
             print(error, file=sys.stderr)
         raise SystemExit(1)
 
-    from cleek._tasks import tasks
+    from cleek import _ctx as ctx
 
     from argparse import SUPPRESS, REMAINDER, ArgumentParser
 
@@ -124,23 +123,22 @@ def main() -> None:
     ns = parser.parse_args()
 
     if ns.completion:
-        print(*(task.full_name for task in tasks.values()))
+        print(*(task.full_name for task in ctx.tasks.values()))
         raise SystemExit()
 
     sys.excepthook = _excepthook
 
     if ns.task is None:
-        print_tasks(tasks)
+        print_tasks(ctx.tasks)
         raise SystemExit()
 
     try:
-        task = tasks[ns.task]
+        task = ctx.tasks[ns.task]
     except KeyError as error:
         print(f'No task named {ns.task!r}', file=sys.stderr)
         raise SystemExit(1) from error
 
-    from cleek._runners import run
-
+    from cleek._parsers import run
     result = run(task, ns.task_args)
     if result is not None:
         print(result)

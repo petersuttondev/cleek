@@ -3,7 +3,8 @@ from inspect import signature
 from typing import TYPE_CHECKING, Literal, Protocol
 import pytest
 
-from cleek._tasks import Task
+from cleek._parsers import _OptionRegistry, _UPPER, run as _run
+from cleek._tasks import Context, Task, task_name_from_impl
 
 if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
@@ -13,10 +14,6 @@ def noop() -> None:  # pragma: no cover
     pass
 
 
-class SupportsName(Protocol):
-    __name__: str
-
-
 class Run(Protocol):
     def __call__(
         self,
@@ -24,28 +21,21 @@ class Run(Protocol):
     ) -> Callable[['_IntrospectableCallable'], None]: ...
 
 
-def run_with_args(
-    *args: object,
-) -> Callable[['_IntrospectableCallable'], None]:
-    def run_impl_with_args(impl: '_IntrospectableCallable') -> None:
-        from cleek import task
-        from cleek._tasks import tasks
-        from cleek._runners import run
-
-        name = 'task'
-        task(name)(impl)
-        run(tasks[name], tuple(str(arg) for arg in args))
-
-    return run_impl_with_args
-
-
 @pytest.fixture
 def run() -> Iterator[Run]:
-    from cleek._tasks import tasks
+    ctx = Context()
 
-    tasks.clear()
-    yield run_with_args
-    tasks.clear()
+    def capture_args(*args: object):
+        def capture_impl(impl: '_IntrospectableCallable'):
+            ctx.task(impl)
+            _run(
+                ctx.tasks[task_name_from_impl(impl)],
+                tuple(str(arg) for arg in args),
+            )
+
+        return capture_impl
+
+    yield capture_args
 
 
 def test_no_args(run: Run) -> None:
@@ -458,8 +448,6 @@ def test_find_free_long_raises_when_no_free_lower() -> None:
 
 
 def test_find_free_long_raises_when_no_free_upper() -> None:
-    from cleek._parsers import _OptionRegistry, _UPPER
-
     reg = _OptionRegistry(upper_chars='A')
     dest = 'long'
     reg.reserve_long(f'--no-{dest}')
@@ -483,39 +471,35 @@ def test_raises_unsupported_signature(run: Run) -> None:
 
 
 def test_task_with_group() -> None:
-    from cleek import task
-    from cleek._tasks import tasks
+    ctx = Context()
 
     group = 'a'
 
-    @task(group=group)
-    def impl() -> None: # pragma: no cover
+    @ctx.task(group=group)
+    def impl() -> None:  # pragma: no cover
         pass
 
-    assert tasks[f'a.{impl.__name__}'].group == group
+    assert ctx.tasks[f'a.{impl.__name__}'].group == group
 
 
 def test_customize() -> None:
-    from cleek import customize
-    from cleek._tasks import tasks
-
+    ctx = Context()
     group = 'group'
     style = 'red'
 
-    @customize(group=group, style=style)
-    def impl() -> None: # pragma: no cover
+    @ctx.customize(group=group, style=style)
+    def impl() -> None:  # pragma: no cover
         pass
 
-    task = tasks[f'{group}.{impl.__name__}']
+    task = ctx.tasks[f'{group}.{impl.__name__}']
     assert task.group == group
     assert task.style == style
 
 
 def test_check_duplicate_task_name_raises() -> None:
-    from cleek import task
-
+    ctx = Context()
     name = 'a'
-    task(name)(noop)
+    ctx.task(name)(noop)
 
     with pytest.raises(ValueError):
-        task(name)(noop)
+        ctx.task(name)(noop)
