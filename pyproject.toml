@@ -27,6 +27,7 @@ license-files = ["LICENSE"]
 dependencies = [
   "rich",
   "trio",
+  "typing-inspect"
 ]
 
 [project.scripts]
