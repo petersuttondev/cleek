@@ -1,9 +1,8 @@
 from collections.abc import Callable
 from typing import Final, Protocol, final, overload
 
-from cleek._tasks import Task as _Task
+from cleek._tasks import Task as _Task, tasks as _tasks
 
-_tasks: Final[dict[str, _Task]] = {}
 
 
 @overload

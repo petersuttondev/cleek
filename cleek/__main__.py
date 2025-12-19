@@ -6,7 +6,6 @@ from cleek._tasks import Task
 
 
 if TYPE_CHECKING:
-    import cleek
     from pathlib import Path
     from types import ModuleType
 
@@ -49,13 +48,6 @@ def load_tasks() -> 'ModuleType':
         parent_path = parent_path.parent
         if parent_path == root_path:
             raise FileNotFoundError('Cannot find cleeks')
-
-
-def make_tasks() -> dict[str, 'cleek._Task']:
-    from cleek import _tasks
-
-    tasks = list(_tasks.values())
-    return {task.full_name: task for task in tasks}
 
 
 def print_tasks(tasks: dict[str, Task]) -> None:
@@ -119,7 +111,7 @@ def main() -> None:
             print(error, file=sys.stderr)
         raise SystemExit(1)
 
-    tasks = make_tasks()
+    from cleek._tasks import tasks
 
     from argparse import SUPPRESS, REMAINDER, ArgumentParser
 

@@ -4,16 +4,16 @@ from typing import Final as _Final, TYPE_CHECKING, final as _final
 if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
 
-__all__: _Final = ('Task',)
+__all__: _Final = ('Task', 'tasks')
 
 
 @_final
 @_dataclass(frozen=True)
 class Task:
-    impl: '_IntrospectableCallable'
-    name: str
-    group: str | None
-    style: str | None
+    impl: _Final['_IntrospectableCallable']
+    name: _Final[str]
+    group: _Final[str | None]
+    style: _Final[str | None]
 
     @property
     def doc(self) -> str | None:
@@ -26,3 +26,6 @@ class Task:
             parts.append(self.group)
         parts.append(self.name)
         return '.'.join(parts)
+
+
+tasks: _Final[dict[str, Task]] = {}
