@@ -8,12 +8,13 @@ from typing import (
     Literal,
     NamedTuple,
     TYPE_CHECKING,
-    _LiteralGenericAlias,  # type: ignore
     cast,
     final,
+    get_args,
 )
 
 import trio
+from typing_inspect import is_literal_type
 
 from ._tasks import Task
 
@@ -198,13 +199,14 @@ class _ArgumentParserBuilder:
     def _pk_literal(
         self,
         param: Parameter,
-        annotation: _LiteralGenericAlias,
+        annotation: object,
     ) -> None:
-        def try_as[T](type: type[T]) -> Iterable[T] | None:
-            args = annotation.__args__
+        any_args: tuple[object, ...] = get_args(annotation)
+
+        def try_as[T](type: type[T]) -> tuple[T, ...] | None:
             return (
-                cast(Iterable[T], args)
-                if all(isinstance(arg, type) for arg in args)
+                cast(tuple[T, ...], any_args)
+                if all(isinstance(arg, type) for arg in any_args)
                 else None
             )
 
@@ -390,7 +392,7 @@ class _ArgumentParserBuilder:
 
     def _pk(self, param: Parameter) -> None:
         annotation = param.annotation
-        if isinstance(annotation, _LiteralGenericAlias):
+        if is_literal_type(annotation):
             self._pk_literal(param, annotation)
         elif annotation is bool:
             self._pk_bool(param)
