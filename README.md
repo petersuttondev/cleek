@@ -42,7 +42,7 @@ $ pip install ./cleek
 
 ## Get Started
 
-1. Create a `cleeks.py` file in the root of your project and add tasks
+1. Create a `cleeks.py` file in the root of your project and add tasks.
 
 ```Python
 from cleek import task
@@ -76,7 +76,7 @@ options:
   -h, --help  show this help message and exit
 ```
 
-Finally, run a task:
+4. Run a task.
 
 ```ShellSession
 $ clk greet Peter
@@ -85,7 +85,7 @@ Hello, Peter!
 
 ## Customizing Tasks
 
-* Set a task's name:
+Set a task's name:
 
 ```Python
 from cleek import task
@@ -100,7 +100,7 @@ $ clk bar
 foo function, bar task
 ```
 
-* Set a task's group:
+Set a task's group:
 
 ```Python
 from cleek import task
@@ -115,9 +115,9 @@ $ clk foo.bar
 bar task in the foo group
 ```
 
-* Set a task's style. Used when listing tasks. See [Rich's Style
-  documentation](https://rich.readthedocs.io/en/stable/style.html) for supported
-  styles.
+Set a task's style. Used when listing tasks. See [Rich's Style
+documentation](https://rich.readthedocs.io/en/stable/style.html) for supported
+styles.
 
 ```Python
 from cleek import task
@@ -127,8 +127,8 @@ def foo() -> None:
     print("I'll be red if you run clk")
 ```
 
-* To apply the same customization to many tasks, use `customize()` to create a
-  pre-configured version of the `task` decorator.
+To apply the same customization to many tasks, use `customize()` to create a
+pre-configured version of the `task` decorator.
 
 ```Python
 from cleek import customize
@@ -196,14 +196,14 @@ issue containing the function signature and I'll add support.
 
 ### `bool`
 
-* Keyword `bool` with `False` or `True` default
+Keyword `bool` with `False` or `True` default
 
 ```Python
 def foo(a: bool = False): ...
 def foo(a: bool = True): ...
 ```
 
-* Keyword optional `bool` with `False`, `True`, or `None` default
+Keyword optional `bool` with `False`, `True`, or `None` default
 
 ```Python
 def foo(a: bool | None = False): ...
@@ -213,32 +213,32 @@ def foo(a: bool | None = None): ...
 
 ### `str`
 
-* Positional `str`
+Positional `str`
 
 ```Python
 def foo(a: str): ...
 ```
 
-* Positional optional `str`
+Positional optional `str`
 
 ```Python
 def foo(a: str | None): ...
 ```
  
-* Keyword `str` with `str` default
+Keyword `str` with `str` default
 
 ```Python
 def foo(a: str = 'a'): ...
 ```
 
-* Keyword optional `str` with `str` or `None` default
+Keyword optional `str` with `str` or `None` default
 
 ```Python
 def foo(a: str | None = 'a'): ...
 def foo(a: str | None = None): ...
 ```
 
-* Variadic positional `str`
+Variadic positional `str`
 
 ```Python
 def foo(*a: str): ...
@@ -246,19 +246,19 @@ def foo(*a: str): ...
 
 ### `int`
 
-* Positional `int`
+Positional `int`
 
 ```Python
 def foo(a: int): ...
 ```
 
-* Keyword `int` with `int` default
+Keyword `int` with `int` default
 
 ```Python
 def foo(a: int = 1): ...
 ```
 
-* Keyword optional `int` with `int` or `None` default
+Keyword optional `int` with `int` or `None` default
 
 ```Python
 def foo(a: int | None = 1): ...
@@ -267,19 +267,19 @@ def foo(a: int | None = None): ...
 
 ### `float`
 
-* Positional `float`
+Positional `float`
 
 ```Python
 def foo(a: float): ...
 ```
 
-* Keyword `float` with `float` default
+Keyword `float` with `float` default
 
 ```Python
 def foo(a: float = 1.0): ...
 ```
 
-* Keyword optional `float` with `float` or `None` default
+Keyword optional `float` with `float` or `None` default
 
 ```Python
 def foo(a: float | None = 1.0): ...
@@ -288,28 +288,28 @@ def foo(a: float | None = None): ...
 
 ### `Literal[T]`
 
-* Positional `int` literal
+Positional `int` literal
 
 ```Python
 @task
 def foo(a: Literal[1, 2, 3]): ...
 ```
 
-* Positional `str` literal
+Positional `str` literal
 
 ```Python
 @task
 def foo(a: Literal['a', 'b', 'c']): ...
 ```
 
-* Keyword `int` literal with `int` default
+Keyword `int` literal with `int` default
 
 ```Python
 @task
 def foo(a: Literal[1, 2, 3] = 1): ...
 ```
 
-* Keyword `str` literal with `str` default
+Keyword `str` literal with `str` default
 
 ```Python
 @task
@@ -318,7 +318,7 @@ def foo(a: Literal['a', 'b', 'c'] = 'a'): ...
 
 ### Misc
 
-* Variadic positional `pathlib.Path`
+Variadic positional `pathlib.Path`
 
 ```Python
 from pathlib import Path
@@ -327,7 +327,7 @@ from pathlib import Path
 def foo(*a: Path): ...
 ```
 
-* Variadic positional `trio.Path`
+Variadic positional `trio.Path`
 
 ```Python
 from trio import Path
