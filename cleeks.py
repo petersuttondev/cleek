@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 from cleek import task
 
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
@@ -49,6 +48,27 @@ def uninstall() -> None:
         cwd=_get_project_dir(),
         check=True,
     )
+
+
+@task
+def coverage(run: bool = False, report: bool = True) -> None:
+    import subprocess
+
+    def coverage(*args: str) -> None:
+        try:
+            subprocess.run(
+                ('coverage', *args),
+                cwd=_get_project_dir(),
+                check=True,
+            )
+        except subprocess.CalledProcessError as error:
+            raise SystemExit(error.returncode)
+
+    if run:
+        coverage('run', '-m', 'pytest')
+
+    if report:
+        coverage('report', '-m')
 
 
 @task
