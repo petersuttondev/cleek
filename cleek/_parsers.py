@@ -325,7 +325,7 @@ class _ArgumentParserBuilder:
             *self._assign_lower(dest),
             type=int,
             default=param.default,
-            help=None if default is None else f'default: {default}',
+            help=None if default is None else 'default: %(default)s',
             dest=dest,
         )
 
