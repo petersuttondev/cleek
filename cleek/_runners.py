@@ -4,10 +4,11 @@ from cleek._parsers import make_parser
 from cleek._tasks import Task
 
 
-def run(task: Task, task_args: Sequence[str]):
+def run(task: Task, task_args: Sequence[str]) -> object:
     parser = make_parser(task)
     ns = parser.parse_args(task_args)
-    args = []
+    args: list[object] = []
+
     for param in signature(task.impl).parameters.values():
         value = getattr(ns, param.name)
         if param.kind == param.VAR_POSITIONAL:
@@ -33,4 +34,3 @@ def run(task: Task, task_args: Sequence[str]):
         return trio.run(run_result)
 
     return result
-

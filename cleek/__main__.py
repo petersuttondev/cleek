@@ -1,4 +1,8 @@
-from typing import TYPE_CHECKING
+import sys
+from types import TracebackType
+from typing import TYPE_CHECKING, Final
+
+from cleek._parsers import UnsupportedSignature
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,6 +72,32 @@ def print_tasks(tasks: 'dict[str, Task]') -> None:
     console.print(table)
 
 
+_prev_excepthook: Final = sys.excepthook
+
+def _excepthook(
+        type: type[BaseException],
+        value: BaseException,
+        traceback: TracebackType,
+) -> None:
+    _prev_excepthook(type, value, traceback)
+
+    if not isinstance(value, UnsupportedSignature):
+        return
+
+    from rich import print
+    from rich.panel import Panel
+
+    print(
+        '\n',
+        Panel(
+            f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function siguature below and I'll add support:\n\n{value.signature}\n",
+            title=':warning: Unsupported Task Function :warning:',
+        ),
+        '\n',
+        file=sys.stderr,
+    )
+
+
 def main() -> None:
     import sys
 
@@ -96,6 +126,8 @@ def main() -> None:
     if ns.completion:
         print(*(task.full_name for task in tasks.values()))
         raise SystemExit()
+
+    sys.excepthook = _excepthook
 
     if ns.task is None:
         print_tasks(tasks)

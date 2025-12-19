@@ -12,12 +12,8 @@ __all__: _Final = ('Task', 'tasks')
 class Task:
     impl: _Final['_IntrospectableCallable']
     name: _Final[str]
-    group: _Final[str | None]
-    style: _Final[str | None]
-
-    @property
-    def doc(self) -> str | None:
-        return self.impl.__doc__
+    group: _Final[str | None] = None
+    style: _Final[str | None] = None
 
     @property
     def full_name(self) -> str:

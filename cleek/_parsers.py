@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from collections.abc import Callable, Iterable
 from enum import Enum, auto, unique
-from inspect import Parameter, signature
+from inspect import Parameter, Signature, signature
 from pathlib import Path
 from typing import (
     Final,
@@ -41,9 +41,14 @@ _UPPER: Final = _OptionKind.UPPWER
 
 @final
 class _OptionRegistry:
-    def __init__(self) -> None:
-        self._free_lower_chars: Final = set('abcdefghijklmnopqrstuvwxyz')
-        self._free_upper_chars: Final = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    def __init__(
+        self,
+        *,
+        lower_chars: Iterable[str] = 'abcdefghijklmnopqrstuvwxyz',
+        upper_chars: Iterable[str] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    ) -> None:
+        self._free_lower_chars: Final = set(lower_chars)
+        self._free_upper_chars: Final = set(upper_chars)
         self._reserved: Final[set[str]] = set()
         self.reserve(_Options('-h', '--help'))
 
@@ -117,9 +122,6 @@ class _OptionRegistry:
     def assign_lower(self, dest: str) -> _Options:
         return self.assign(_LOWER, dest)
 
-    def assign_upper(self, dest: str) -> _Options:
-        return self.assign(_UPPER, dest)
-
 
 class _Unsupported(ValueError):
     pass
@@ -131,6 +133,12 @@ class _UnsupportedDefault(_Unsupported):
         super().__init__(f'unsupported default {default!r}')
 
 
+class UnsupportedSignature(_Unsupported):
+    def __init__(self, signature: Signature) -> None:
+        self.signature: Final = signature
+        super().__init__(f'unsupported signature {signature!r}')
+
+
 @final
 class _ArgumentParserBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
@@ -138,7 +146,6 @@ class _ArgumentParserBuilder:
         self._add_argument: Final = self._parser.add_argument
         self._options: Final = _OptionRegistry()
         self._assign_lower: Final = self._options.assign_lower
-        self._assign_upper: Final = self._options.assign_upper
 
     # POSITIONAL_OR_KEYWORD #
 
@@ -440,28 +447,16 @@ class _ArgumentParserBuilder:
             case _ as kind:
                 raise _Unsupported(f'unsupported kind {kind!r}')
 
+    def _add_signature(self, sig: Signature) -> None:
+        for param in sig.parameters.values():
+            self._add_param(param)
+
     def build(self, obj: '_IntrospectableCallable') -> None:
         sig = signature(obj)
         try:
-            for param in sig.parameters.values():
-                self._add_param(param)
+            self._add_signature(sig)
         except _Unsupported as error:
-            import sys
-            import traceback
-            from rich import print
-            from rich.panel import Panel
-
-            print(traceback.format_exc(), file=sys.stderr)
-
-            print(
-                Panel(
-                    f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function siguature below and I'll add support:\n\n{sig}\n",
-                    title=':warning: Unsupported Task Function :warning:',
-                ),
-                file=sys.stderr,
-            )
-
-            raise SystemExit(1) from error
+            raise UnsupportedSignature(sig) from error
 
 
 def make_parser(task: Task) -> ArgumentParser:

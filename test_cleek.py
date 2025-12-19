@@ -1,9 +1,16 @@
 from collections.abc import Callable, Iterator
+from inspect import signature
 from typing import TYPE_CHECKING, Literal, Protocol
 import pytest
 
+from cleek._tasks import Task
+
 if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
+
+
+def noop() -> None:  # pragma: no cover
+    pass
 
 
 class SupportsName(Protocol):
@@ -369,3 +376,146 @@ def test_var_trio_path(run: Run) -> None:
     @run(*val)
     def _(*a: Path) -> None:
         assert a == val
+
+
+def test_coro_func_impl(run: Run) -> None:
+    called = False
+
+    @run()
+    async def _() -> None:
+        nonlocal called
+        called = True
+
+    assert called
+
+
+def test_impl_returns_coro(run: Run) -> None:
+    called = False
+
+    @run()
+    def _():
+        async def foo():
+            nonlocal called
+            called = True
+
+        return foo()
+
+    assert called
+
+
+def test_full_name() -> None:
+    name = 'bar'
+    group = 'foo'
+    task = Task(noop, name, group=group)
+    assert task.full_name == f'{group}.{name}'
+
+
+def test_check_free_raises_when_passed_reserved_short() -> None:
+    from cleek._parsers import _OptionRegistry
+
+    reg = _OptionRegistry()
+    reg.reserve_short('-a')
+    with pytest.raises(ValueError):
+        reg.check_free('-a')
+
+
+def test_check_free_raises_when_passed_reserved_long() -> None:
+    from cleek._parsers import _OptionRegistry
+
+    reg = _OptionRegistry()
+    reg.reserve_long('--long')
+    with pytest.raises(ValueError):
+        reg.check_free('--long')
+
+
+def test_find_free_short_raises_when_no_free_lower() -> None:
+    from cleek._parsers import _OptionRegistry, _LOWER
+
+    reg = _OptionRegistry(lower_chars='a', upper_chars='A')
+    reg.reserve_short('-a')
+    with pytest.raises(ValueError):
+        reg.find_free_short(_LOWER, 'a')
+
+
+def test_find_free_short_raises_when_no_free_upper() -> None:
+    from cleek._parsers import _OptionRegistry, _UPPER
+
+    reg = _OptionRegistry(upper_chars='A')
+    reg.reserve_short('-A')
+    with pytest.raises(ValueError):
+        reg.find_free_short(_UPPER, 'a')
+
+
+def test_find_free_long_raises_when_no_free_lower() -> None:
+    from cleek._parsers import _OptionRegistry, _LOWER
+
+    reg = _OptionRegistry(upper_chars='A')
+    dest = 'long'
+    reg.reserve_long(f'--{dest}')
+
+    with pytest.raises(ValueError):
+        reg.find_free_long(_LOWER, dest)
+
+
+def test_find_free_long_raises_when_no_free_upper() -> None:
+    from cleek._parsers import _OptionRegistry, _UPPER
+
+    reg = _OptionRegistry(upper_chars='A')
+    dest = 'long'
+    reg.reserve_long(f'--no-{dest}')
+
+    with pytest.raises(ValueError):
+        reg.find_free_long(_UPPER, dest)
+
+
+def test_raises_unsupported_signature(run: Run) -> None:
+    from cleek._parsers import UnsupportedSignature
+
+    class Foo:
+        pass
+
+    def impl(_: Foo) -> None: ...
+
+    with pytest.raises(UnsupportedSignature) as exc_info:
+        run()(impl)
+
+    assert exc_info.value.signature == signature(impl)
+
+
+def test_task_with_group() -> None:
+    from cleek import task
+    from cleek._tasks import tasks
+
+    group = 'a'
+
+    @task(group=group)
+    def impl() -> None: # pragma: no cover
+        pass
+
+    assert tasks[f'a.{impl.__name__}'].group == group
+
+
+def test_customize() -> None:
+    from cleek import customize
+    from cleek._tasks import tasks
+
+    group = 'group'
+    style = 'red'
+
+    @customize(group=group, style=style)
+    def impl() -> None: # pragma: no cover
+        pass
+
+    task = tasks[f'{group}.{impl.__name__}']
+    assert task.group == group
+    assert task.style == style
+
+
+def test_check_duplicate_task_name_raises() -> None:
+    from cleek import task
+
+    name = 'a'
+    task(name)(noop)
+
+    with pytest.raises(ValueError):
+        task(name)(noop)
