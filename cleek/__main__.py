@@ -1,13 +1,10 @@
-from inspect import iscoroutine, iscoroutinefunction, signature
-from typing import TYPE_CHECKING, Sequence
-
-from cleek._parsers import make_parser
-from cleek._tasks import Task
-
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
     from types import ModuleType
+
+    from cleek._tasks import Task
 
 
 def try_import(path: 'Path') -> 'ModuleType | None':
@@ -50,9 +47,10 @@ def load_tasks() -> 'ModuleType':
             raise FileNotFoundError('Cannot find cleeks')
 
 
-def print_tasks(tasks: dict[str, Task]) -> None:
+def print_tasks(tasks: 'dict[str, Task]') -> None:
     from rich.console import Console
     from rich.table import Table
+    from cleek._parsers import make_parser
 
     console = Console()
     table = Table()
