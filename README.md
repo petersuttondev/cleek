@@ -25,6 +25,8 @@ options:
   -o, --op {add,sub}  default: add
 ```
 
+[See how I cleek in another project](https://github.com/petersuttondev/gexport/blob/main/cleeks.py#L11)
+
 ## Install
 
 ### PyPI
