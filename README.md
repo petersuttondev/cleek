@@ -164,6 +164,22 @@ $ clk
 └───────┴────────────────┘
 ```
 
+## Shell Completion
+
+Shell completion is provided by `argcomplete`:
+
+1. Complete `argcomplete`'s [installation instructions](https://kislyuk.github.io/argcomplete/#installation)
+
+2. Add `eval "$(register-python-argcomplete clk)"` to your shell configuration.
+
+### zsh
+
+```Shell
+_complete_clk() {
+    reply=($(clk --completion))
+}
+
+compctl -K _complete_clk + -f clk
 ## Async Support
 
 Your tasks can be `async` functions:
@@ -338,15 +354,3 @@ from trio import Path
 def foo(*a: Path): ...
 ```
 
-## Shell Completion
-
-`clk --completion` prints all task names to stdout.
-
-### zsh
-
-```Shell
-_complete_clk() {
-    reply=($(clk --completion))
-}
-
-compctl -K _complete_clk + -f clk

@@ -25,6 +25,7 @@ classifiers = [
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
+  "argcomplete",
   "rich",
   "trio",
   "typing-inspect"

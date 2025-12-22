@@ -3,7 +3,7 @@ from inspect import signature
 from typing import TYPE_CHECKING, Literal, Protocol
 import pytest
 
-from cleek._parsers import _OptionRegistry, _UPPER, run as _run
+from cleek._parsers import _OptionRegistry, _NO, make_parser, run as _run
 from cleek._tasks import Context, Task, task_name_from_impl
 
 if TYPE_CHECKING:
@@ -28,9 +28,13 @@ def run() -> Iterator[Run]:
     def capture_args(*args: object):
         def capture_impl(impl: '_IntrospectableCallable'):
             ctx.task(impl)
+            name = task_name_from_impl(impl)
+            ns = make_parser(ctx).parse_args(
+                (name, *(str(arg) for arg in args))
+            )
             _run(
                 ctx.tasks[task_name_from_impl(impl)],
-                tuple(str(arg) for arg in args),
+                ns,
             )
 
         return capture_impl
@@ -419,41 +423,41 @@ def test_check_free_raises_when_passed_reserved_long() -> None:
 
 
 def test_find_free_short_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _OptionRegistry, _LOWER
+    from cleek._parsers import _OptionRegistry, _YES
 
-    reg = _OptionRegistry(lower_chars='a', upper_chars='A')
+    reg = _OptionRegistry(yes_chars='a', no_chars='A')
     reg.reserve_short('-a')
     with pytest.raises(ValueError):
-        reg.find_free_short(_LOWER, 'a')
+        reg.find_free_short(_YES, 'a')
 
 
 def test_find_free_short_raises_when_no_free_upper() -> None:
-    from cleek._parsers import _OptionRegistry, _UPPER
+    from cleek._parsers import _OptionRegistry, _NO
 
-    reg = _OptionRegistry(upper_chars='A')
+    reg = _OptionRegistry(no_chars='A')
     reg.reserve_short('-A')
     with pytest.raises(ValueError):
-        reg.find_free_short(_UPPER, 'a')
+        reg.find_free_short(_NO, 'a')
 
 
 def test_find_free_long_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _OptionRegistry, _LOWER
+    from cleek._parsers import _OptionRegistry, _YES
 
-    reg = _OptionRegistry(upper_chars='A')
+    reg = _OptionRegistry(no_chars='A')
     dest = 'long'
     reg.reserve_long(f'--{dest}')
 
     with pytest.raises(ValueError):
-        reg.find_free_long(_LOWER, dest)
+        reg.find_free_long(_YES, dest)
 
 
 def test_find_free_long_raises_when_no_free_upper() -> None:
-    reg = _OptionRegistry(upper_chars='A')
+    reg = _OptionRegistry(no_chars='A')
     dest = 'long'
     reg.reserve_long(f'--no-{dest}')
 
     with pytest.raises(ValueError):
-        reg.find_free_long(_UPPER, dest)
+        reg.find_free_long(_NO, dest)
 
 
 def test_raises_unsupported_signature(run: Run) -> None:

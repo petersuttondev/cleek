@@ -1,10 +1,13 @@
+# PYTHON_ARGCOMPLETE_OK
 import sys
-from types import TracebackType
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
+
+from cleek._parsers import make_single_parser
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from types import ModuleType
+    from typing import Final
+    from types import ModuleType, TracebackType
 
     from cleek._tasks import Task
 
@@ -52,7 +55,6 @@ def load_tasks() -> 'ModuleType':
 def print_tasks(tasks: 'dict[str, Task]') -> None:
     from rich.console import Console
     from rich.table import Table
-    from cleek._parsers import make_parser
 
     console = Console()
     table = Table()
@@ -63,19 +65,21 @@ def print_tasks(tasks: 'dict[str, Task]') -> None:
         if task.style is not None:
             style = task.style
             name = f'[{style}]{name}[/{style}]'
-        parser = make_parser(task)
-        parser.color = False
+        parser = make_single_parser(task)
+        if sys.version_info >= (3, 14):
+            parser.color = False
         usage = ' '.join(parser.format_usage().strip().split()[1:])
         table.add_row(name, usage)
     console.print(table)
 
 
-_prev_excepthook: Final = sys.excepthook
+_prev_excepthook: 'Final' = sys.excepthook
+
 
 def _excepthook(
-        type: type[BaseException],
-        value: BaseException,
-        traceback: TracebackType,
+    type: type[BaseException],
+    value: BaseException,
+    traceback: 'TracebackType',
 ) -> None:
     _prev_excepthook(type, value, traceback)
     from cleek._parsers import UnsupportedSignature
@@ -97,6 +101,7 @@ def _excepthook(
     )
 
 
+
 def main() -> None:
     import sys
 
@@ -108,23 +113,9 @@ def main() -> None:
         raise SystemExit(1)
 
     from cleek import _ctx as ctx
-
-    from argparse import SUPPRESS, REMAINDER, ArgumentParser
-
-    parser = ArgumentParser()
-    parser.add_argument(
-        '--completion',
-        action='store_true',
-        default=False,
-        help=SUPPRESS,
-    )
-    parser.add_argument('task', nargs='?')
-    parser.add_argument('task_args', nargs=REMAINDER)
+    from cleek._parsers import make_parser
+    parser = make_parser(ctx)
     ns = parser.parse_args()
-
-    if ns.completion:
-        print(*(task.full_name for task in ctx.tasks.values()))
-        raise SystemExit()
 
     sys.excepthook = _excepthook
 
@@ -139,7 +130,8 @@ def main() -> None:
         raise SystemExit(1) from error
 
     from cleek._parsers import run
-    result = run(task, ns.task_args)
+
+    result = run(task, ns)
     if result is not None:
         print(result)
 

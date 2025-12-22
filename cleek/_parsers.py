@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, _SubParsersAction, Namespace
 from collections.abc import Callable, Iterable, Sequence
 from enum import Enum, auto, unique
 from inspect import (
@@ -22,7 +22,7 @@ from typing import (
 import trio
 from typing_inspect import is_literal_type
 
-from cleek._tasks import Task
+from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
@@ -37,13 +37,13 @@ class _Options(NamedTuple):
 @final
 @unique
 class _OptionKind(Enum):
-    LOWER = auto()
-    UPPWER = auto()
+    YES = auto()
+    NO = auto()
 
 
-_LOWER: Final = _OptionKind.LOWER
+_YES: Final = _OptionKind.YES
 
-_UPPER: Final = _OptionKind.UPPWER
+_NO: Final = _OptionKind.NO
 
 
 @final
@@ -51,11 +51,11 @@ class _OptionRegistry:
     def __init__(
         self,
         *,
-        lower_chars: Iterable[str] = 'abcdefghijklmnopqrstuvwxyz',
-        upper_chars: Iterable[str] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        yes_chars: Iterable[str] = 'abcdefghijklmnopqrstuvwxyz',
+        no_chars: Iterable[str] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     ) -> None:
-        self._free_lower_chars: Final = set(lower_chars)
-        self._free_upper_chars: Final = set(upper_chars)
+        self._free_yes_chars: Final = set(yes_chars)
+        self._free_no_chars: Final = set(no_chars)
         self._reserved: Final[set[str]] = set()
         self.reserve(_Options('-h', '--help'))
 
@@ -65,8 +65,8 @@ class _OptionRegistry:
 
     def _reserve_short(self, option: str) -> None:
         char = option[1]
-        self._free_lower_chars.discard(char)
-        self._free_upper_chars.discard(char)
+        self._free_yes_chars.discard(char)
+        self._free_no_chars.discard(char)
         self._reserved.add(option)
 
     def reserve_short(self, option: str) -> None:
@@ -91,12 +91,12 @@ class _OptionRegistry:
 
     def find_free_short(self, kind: _OptionKind, dest: str) -> str:
         match kind:
-            case _OptionKind.LOWER:
+            case _OptionKind.YES:
                 candidates = dest.lower()
-                free_chars = self._free_lower_chars
-            case _OptionKind.UPPWER:
+                free_chars = self._free_yes_chars
+            case _OptionKind.NO:
                 candidates = dest.upper()
-                free_chars = self._free_upper_chars
+                free_chars = self._free_no_chars
         for char in candidates:
             if char in free_chars:
                 option = f'-{char}'
@@ -107,7 +107,7 @@ class _OptionRegistry:
 
     def find_free_long(self, kind: _OptionKind, dest: str) -> str:
         parts = ['--']
-        if kind == _UPPER:
+        if kind == _NO:
             parts.append('no-')
         parts.append(dest.replace('_', '-'))
         option = ''.join(parts)
@@ -126,8 +126,8 @@ class _OptionRegistry:
         self._reserve(options)
         return options
 
-    def assign_lower(self, dest: str) -> _Options:
-        return self.assign(_LOWER, dest)
+    def assign_yes(self, dest: str) -> _Options:
+        return self.assign(_YES, dest)
 
 
 class _Unsupported(ValueError):
@@ -152,7 +152,7 @@ class _ArgumentParserBuilder:
         self._parser: Final = parser
         self._add_argument: Final = self._parser.add_argument
         self._options: Final = _OptionRegistry()
-        self._assign_lower: Final = self._options.assign_lower
+        self._assign_yes: Final = self._options.assign_yes
 
     # POSITIONAL_OR_KEYWORD #
 
@@ -174,7 +174,7 @@ class _ArgumentParserBuilder:
     ) -> None:
         dest = param.name
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             default=param.default,
             type=type,
             choices=choices,
@@ -207,19 +207,22 @@ class _ArgumentParserBuilder:
         param: Parameter,
         annotation: object,
     ) -> None:
-        any_args: tuple[object, ...] = get_args(annotation)
+        args: tuple[object, ...] = get_args(annotation)
 
-        def try_as[T](type: type[T]) -> tuple[T, ...] | None:
-            return (
-                cast(tuple[T, ...], any_args)
-                if all(isinstance(arg, type) for arg in any_args)
-                else None
-            )
+        try:
+            arg = args[0]
+        except KeyError as error:
+            raise _Unsupported('unsupported literal') from error
 
-        if (args := try_as(int)) is not None:
-            self._pk_literal_int(param, args)
-        elif (args := try_as(str)) is not None:
-            self._pk_literal_str(param, args)
+        def check_rest[T](t: type[T]) -> tuple[T, ...]:
+            if all(isinstance(arg, t) for arg in args[1:]):
+                return cast(tuple[T, ...], args)
+            raise _Unsupported('unsupported literal')
+
+        if isinstance(arg, int):
+            self._pk_literal_int(param, check_rest(int))
+        elif isinstance(arg, str):
+            self._pk_literal_str(param, check_rest(str))
         else:
             raise _Unsupported('unsupported literal')
 
@@ -239,10 +242,10 @@ class _ArgumentParserBuilder:
         )
 
     def _pk_bool_default_false(self, param: Parameter) -> None:
-        self._pk_bool_default(param, _LOWER, 'store_true')
+        self._pk_bool_default(param, _YES, 'store_true')
 
     def _pk_bool_default_true(self, param: Parameter) -> None:
-        self._pk_bool_default(param, _UPPER, 'store_false')
+        self._pk_bool_default(param, _NO, 'store_false')
 
     def _pk_bool(self, param: Parameter) -> None:
         default = param.default
@@ -256,8 +259,8 @@ class _ArgumentParserBuilder:
     def _pk_optional_bool_default_none(self, param: Parameter) -> None:
         options = self._options
         dest = param.name
-        pos = options.find_free(_LOWER, dest)
-        neg = options.find_free(_UPPER, dest)
+        pos = options.find_free(_YES, dest)
+        neg = options.find_free(_NO, dest)
         options.reserve(pos)
         options.reserve(neg)
         self._add_argument(*pos, action='store_true', default=None, dest=dest)
@@ -279,7 +282,7 @@ class _ArgumentParserBuilder:
     def _pk_float_default_float(self, param: Parameter) -> None:
         dest = param.name
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             type=float,
             default=param.default,
             help='default: %(default)s',
@@ -302,7 +305,7 @@ class _ArgumentParserBuilder:
         dest = param.name
         default = None if param.default == param.empty else param.default
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             type=float,
             default=default,
             help=None if default is None else 'default: %(default)s',
@@ -317,7 +320,7 @@ class _ArgumentParserBuilder:
     def _pk_int_default_int(self, param: Parameter) -> None:
         dest = param.name
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             type=int,
             default=param.default,
             help='default: %(default)s',
@@ -337,7 +340,7 @@ class _ArgumentParserBuilder:
         dest = param.name
         default = None if param.default == param.empty else param.default
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             type=int,
             default=param.default,
             help=None if default is None else 'default: %(default)s',
@@ -349,7 +352,7 @@ class _ArgumentParserBuilder:
     def _pk_str_default_str(self, param: Parameter) -> None:
         dest = param.name
         self._add_argument(
-            *self._options.assign_lower(dest),
+            *self._assign_yes(dest),
             default=param.default,
             help='default: %(default)s',
             dest=dest,
@@ -370,7 +373,7 @@ class _ArgumentParserBuilder:
     def _pk_optional_str_default_str(self, param: Parameter) -> None:
         dest = param.name
         self._add_argument(
-            *self._assign_lower(dest),
+            *self._assign_yes(dest),
             default=param.default,
             help='default: %(default)s',
             dest=dest,
@@ -378,7 +381,7 @@ class _ArgumentParserBuilder:
 
     def _pk_optional_str_default_none(self, param: Parameter) -> None:
         dest = param.name
-        self._add_argument(*self._options.assign_lower(dest), dest=dest)
+        self._add_argument(*self._assign_yes(dest), dest=dest)
 
     def _pk_optional_str_default_empty(self, param: Parameter) -> None:
         self._pk_optional_str_default_none(param)
@@ -467,16 +470,41 @@ class _ArgumentParserBuilder:
             raise UnsupportedSignature(sig) from error
 
 
-def make_parser(task: Task) -> ArgumentParser:
+def make_single_parser(task: Task) -> ArgumentParser:
     parser = ArgumentParser(prog=f'clk {task.full_name}')
     builder = _ArgumentParserBuilder(parser)
     builder.build(task.impl)
     return parser
 
 
-def run(task: Task, task_args: Sequence[str]) -> None:
-    parser = make_parser(task)
-    ns = parser.parse_args(task_args)
+def add_subparser(
+    task: Task,
+    subparsers: '_SubParsersAction[ArgumentParser]',
+) -> None:
+    parser = subparsers.add_parser(task.full_name)
+    builder = _ArgumentParserBuilder(parser)
+    builder.build(task.impl)
+
+
+def make_parser(ctx: Context) -> 'ArgumentParser':
+    from argparse import ArgumentParser
+    from cleek._parsers import add_subparser
+    import argcomplete
+
+    parser = ArgumentParser(add_help=False)
+    subparsers = parser.add_subparsers(
+        description='task',
+        help='task',
+        title='task',
+        dest='task',
+    )
+    for task in ctx.tasks.values():
+        add_subparser(task, subparsers)
+    argcomplete.autocomplete(parser)
+    return parser
+
+
+def run(task: Task, ns: Namespace) -> None:
     args: list[object] = []
 
     for param in signature(task.impl).parameters.values():
