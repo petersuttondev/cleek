@@ -168,18 +168,10 @@ $ clk
 
 Shell completion is provided by `argcomplete`:
 
-1. Complete `argcomplete`'s [installation instructions](https://kislyuk.github.io/argcomplete/#installation)
+1. Setup `argcomplete` following their [installation instructions](https://kislyuk.github.io/argcomplete/#installation)
 
 2. Add `eval "$(register-python-argcomplete clk)"` to your shell configuration.
 
-### zsh
-
-```Shell
-_complete_clk() {
-    reply=($(clk --completion))
-}
-
-compctl -K _complete_clk + -f clk
 ## Async Support
 
 Your tasks can be `async` functions:
