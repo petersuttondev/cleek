@@ -1,9 +1,13 @@
+from __future__ import annotations
 from collections.abc import Callable, Iterator
 from inspect import signature
-from typing import TYPE_CHECKING, Literal, Protocol
-import pytest
+from pathlib import Path
+from typing import Literal, Protocol, TYPE_CHECKING
 
-from cleek._parsers import _OptionRegistry, _NO, make_parser, run as _run
+import pytest
+import trio
+
+from cleek._parsers import _NO, _OptionRegistry, make_parser, run as _run
 from cleek._tasks import Context, Task, task_name_from_impl
 
 if TYPE_CHECKING:
@@ -353,8 +357,6 @@ def test_p_literal_str_def_str_arg_str(run: Run) -> None:
 
 
 def test_var_pathlib_path(run: Run) -> None:
-    from pathlib import Path
-
     val = (Path('/'), Path('/a'), Path('/a/b'))
 
     @run(*val)
@@ -363,12 +365,10 @@ def test_var_pathlib_path(run: Run) -> None:
 
 
 def test_var_trio_path(run: Run) -> None:
-    from trio import Path
-
-    val = (Path('/'), Path('/a'), Path('/a/b'))
+    val = (trio.Path('/'), trio.Path('/a'), trio.Path('/a/b'))
 
     @run(*val)
-    def _(*a: Path) -> None:
+    def _(*a: trio.Path) -> None:
         assert a == val
 
 
@@ -466,12 +466,12 @@ def test_raises_unsupported_signature(run: Run) -> None:
     class Foo:
         pass
 
-    def impl(_: Foo) -> None: ...
+    def impl(_: 'Foo') -> None: ...
 
     with pytest.raises(UnsupportedSignature) as exc_info:
         run()(impl)
 
-    assert exc_info.value.signature == signature(impl)
+    assert exc_info.value.signature == signature(impl, eval_str=True)
 
 
 def test_task_with_group() -> None:

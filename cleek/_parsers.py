@@ -1,5 +1,6 @@
+from __future__ import annotations
 from argparse import ArgumentParser, _SubParsersAction, Namespace
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from enum import Enum, auto, unique
 from inspect import (
     Parameter,
@@ -14,6 +15,7 @@ from typing import (
     Literal,
     NamedTuple,
     TYPE_CHECKING,
+    TypeVar,
     cast,
     final,
     get_args,
@@ -146,6 +148,8 @@ class UnsupportedSignature(_Unsupported):
         super().__init__(f'unsupported signature {signature!r}')
 
 
+_T = TypeVar('_T')
+
 @final
 class _ArgumentParserBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
@@ -158,19 +162,19 @@ class _ArgumentParserBuilder:
 
     # Literal
 
-    def _pk_literal_type_default_empty[T](
+    def _pk_literal_type_default_empty(
         self,
         param: Parameter,
-        type: Callable[[str], T],
-        choices: Iterable[T],
+        type: Callable[[str], _T],
+        choices: Iterable[_T],
     ) -> None:
         self._add_argument(param.name, type=type, choices=choices)
 
-    def _pk_literal_type_default_type[T](
+    def _pk_literal_type_default_type(
         self,
         param: Parameter,
-        type: Callable[[str], T],
-        choices: Iterable[T],
+        type: Callable[[str], _T],
+        choices: Iterable[_T],
     ) -> None:
         dest = param.name
         self._add_argument(
@@ -182,11 +186,11 @@ class _ArgumentParserBuilder:
             dest=dest,
         )
 
-    def _pk_literal_type[T](
+    def _pk_literal_type(
         self,
         param: Parameter,
-        type: type[T],
-        choices: Iterable[T],
+        type: type[_T],
+        choices: Iterable[_T],
     ) -> None:
         default = param.default
         if default == param.empty:
@@ -214,9 +218,9 @@ class _ArgumentParserBuilder:
         except KeyError as error:
             raise _Unsupported('unsupported literal') from error
 
-        def check_rest[T](t: type[T]) -> tuple[T, ...]:
+        def check_rest(t: type[_T]) -> tuple[_T, ...]:
             if all(isinstance(arg, t) for arg in args[1:]):
-                return cast(tuple[T, ...], args)
+                return cast(tuple[_T, ...], args)
             raise _Unsupported('unsupported literal')
 
         if isinstance(arg, int):
@@ -463,7 +467,7 @@ class _ArgumentParserBuilder:
             self._add_param(param)
 
     def build(self, obj: '_IntrospectableCallable') -> None:
-        sig = signature(obj)
+        sig = signature(obj, eval_str=True)
         try:
             self._add_signature(sig)
         except _Unsupported as error:
@@ -507,7 +511,7 @@ def make_parser(ctx: Context) -> 'ArgumentParser':
 def run(task: Task, ns: Namespace) -> None:
     args: list[object] = []
 
-    for param in signature(task.impl).parameters.values():
+    for param in signature(task.impl, eval_str=True).parameters.values():
         value = getattr(ns, param.name)
         if param.kind == param.VAR_POSITIONAL:
             args.extend(value)

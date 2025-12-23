@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+from __future__ import annotations
+from typing import TYPE_CHECKING, TypeAlias
 
 from cleek import task
 
@@ -32,6 +33,7 @@ def install() -> None:
         _args(
             ('pip', 'install'),
             ('--config-settings', 'editable_mode=strict'),
+            ('--group', 'dev'),
             ('--editable', '.'),
         ),
         cwd=_get_project_dir(),
@@ -80,7 +82,7 @@ def test() -> None:
 
 # -- Utilities -----------------------------------------------------------------
 
-type _Args = Iterable[_Args] | str
+_Args: TypeAlias = 'Iterable[_Args] | str'
 
 
 def _args_flatten(args: _Args, flat: list[str]) -> None:

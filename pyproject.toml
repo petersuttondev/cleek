@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A simple task runner that generates command line interfaces"
 readme = "README.md"
-requires-python = ">= 3.13"
+requires-python = ">= 3.10"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -28,8 +28,12 @@ dependencies = [
   "argcomplete",
   "rich",
   "trio",
+  "typing-extensions",
   "typing-inspect"
 ]
 
 [project.scripts]
 clk = "cleek.__main__:main"
+
+[dependency-groups]
+dev = ["pytest"]

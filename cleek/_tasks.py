@@ -3,7 +3,9 @@ from dataclasses import dataclass as _dataclass
 from typing import (
     Final as _Final,
     TYPE_CHECKING,
+    ParamSpec,
     Protocol as _Protocol,
+    TypeVar,
     final as _final,
     overload as _overload,
 )
@@ -37,6 +39,10 @@ def task_name_from_impl(impl: 'SupportsDunderName') -> str:
     return impl.__name__.replace('_', '-')
 
 
+_T = TypeVar('_T')
+_P = ParamSpec('_P')
+
+
 @_final
 class _Customize:
     def __init__(
@@ -51,33 +57,33 @@ class _Customize:
         self._style: _Final = style
 
     @_overload
-    def __call__[**P, T](
+    def __call__(
         self,
-        impl: Callable[P, T],
+        impl: Callable[_P, _T],
         /,
         *,
         group: str | None = ...,
         style: str | None = ...,
-    ) -> Callable[P, T]: ...
+    ) -> Callable[_P, _T]: ...
 
     @_overload
-    def __call__[**P, T](
+    def __call__(
         self,
         name: str | None = ...,
         /,
         *,
         group: str | None = ...,
         style: str | None = ...,
-    ) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+    ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
 
-    def __call__[**P, T](
+    def __call__(
         self,
-        implOrName: Callable[P, T] | str | None = None,
+        implOrName: Callable[_P, _T] | str | None = None,
         /,
         *,
         group: str | None = None,
         style: str | None = None,
-    ) -> Callable[P, T] | Callable[[Callable[P, T]], Callable[P, T]]:
+    ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
         if group is None:
             group = self._group
         if style is None:
@@ -99,34 +105,34 @@ class Context:
         return _Customize(self, group=group, style=style)
 
     @_overload
-    def task[**P, T](
+    def task(
         self,
-        impl: Callable[P, T],
+        impl: Callable[_P, _T],
         /,
         *,
         group: str | None = ...,
         style: str | None = ...,
-    ) -> Callable[P, T]: ...
+    ) -> Callable[_P, _T]: ...
 
     @_overload
-    def task[**P, T](
+    def task(
         self,
         name: str | None = ...,
         /,
         *,
         group: str | None = ...,
         style: str | None = ...,
-    ) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+    ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
 
-    def task[**P, T](
+    def task(
         self,
-        implOrName: Callable[P, T] | str | None = None,
+        implOrName: Callable[_P, _T] | str | None = None,
         /,
         *,
         group: str | None = None,
         style: str | None = None,
-    ) -> Callable[P, T] | Callable[[Callable[P, T]], Callable[P, T]]:
-        def register(name: str, impl: Callable[P, T]) -> Callable[P, T]:
+    ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
+        def register(name: str, impl: Callable[_P, _T]) -> Callable[_P, _T]:
             task = Task(impl=impl, name=name, group=group, style=style)
             full_name = task.full_name
 
@@ -138,7 +144,7 @@ class Context:
 
         if implOrName is None:
 
-            def unnamed_task(impl: Callable[P, T]) -> Callable[P, T]:
+            def unnamed_task(impl: Callable[_P, _T]) -> Callable[_P, _T]:
                 return register(task_name_from_impl(impl), impl)
 
             return unnamed_task
@@ -146,7 +152,7 @@ class Context:
         if isinstance(implOrName, str):
             name = implOrName
 
-            def named_task(impl: Callable[P, T]) -> Callable[P, T]:
+            def named_task(impl: Callable[_P, _T]) -> Callable[_P, _T]:
                 return register(name, impl)
 
             return named_task
