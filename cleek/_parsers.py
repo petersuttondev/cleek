@@ -1,6 +1,5 @@
 from __future__ import annotations
 from argparse import ArgumentParser, _SubParsersAction, Namespace
-from collections.abc import Callable, Iterable
 from enum import Enum, auto, unique
 from inspect import (
     Parameter,
@@ -24,6 +23,7 @@ from typing import (
 from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
     from inspect import _IntrospectableCallable
 
 
