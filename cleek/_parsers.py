@@ -21,7 +21,6 @@ from typing import (
     get_args,
 )
 
-import trio
 from typing_inspect import is_literal_type
 
 from cleek._tasks import Context, Task
@@ -438,6 +437,7 @@ class _ArgumentParserBuilder:
         self._vp_type(param, str)
 
     def _vp_trio_path(self, param: Parameter) -> None:
+        import trio
         self._vp_type(param, trio.Path)
 
     def _vp(self, param: Parameter) -> None:
@@ -446,10 +446,12 @@ class _ArgumentParserBuilder:
             self._vp_path(param)
         elif annotation is str:
             self._vp_str(param)
-        elif annotation is trio.Path:
-            self._vp_trio_path(param)
         else:
-            raise _Unsupported(f'unsupported annotation {annotation!r}')
+            import trio
+            if annotation is trio.Path:
+                self._vp_trio_path(param)
+            else:
+                raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # -- #
 
