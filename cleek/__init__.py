@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations as _annotations
 from cleek._tasks import Context as _Context
 
 _ctx = _Context()

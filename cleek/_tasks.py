@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from inspect import _IntrospectableCallable
 
 
-class SupportsDunderName(_Protocol):
-    __name__: str
+    class SupportsDunderName(_Protocol):
+        __name__: str
 
 
 @_final

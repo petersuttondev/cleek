@@ -1,17 +1,17 @@
 # PYTHON_ARGCOMPLETE_OK
-from __future__ import annotations
-import sys
-from typing import TYPE_CHECKING
+from __future__ import annotations as _annotations
+import sys as _sys
+from typing import TYPE_CHECKING as _TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from pathlib import Path
-    from typing import Final
+if _TYPE_CHECKING:
+    from pathlib import Path as _Path
+    from typing import Final as _Final
     from types import ModuleType, TracebackType
 
     from cleek._tasks import Task
 
 
-def try_import(path: 'Path') -> 'ModuleType | None':
+def try_import(path: '_Path') -> 'ModuleType | None':
     import importlib.util
     import sys
 
@@ -66,14 +66,14 @@ def print_tasks(tasks: 'dict[str, Task]') -> None:
             style = task.style
             name = f'[{style}]{name}[/{style}]'
         parser = make_single_parser(task)
-        if sys.version_info >= (3, 14):
+        if _sys.version_info >= (3, 14):
             parser.color = False
         usage = ' '.join(parser.format_usage().strip().split()[1:])
         table.add_row(name, usage)
     console.print(table)
 
 
-_prev_excepthook: 'Final' = sys.excepthook
+_prev_excepthook: '_Final' = _sys.excepthook
 
 
 def _excepthook(
@@ -97,7 +97,7 @@ def _excepthook(
             title=':warning: Unsupported Task Function :warning:',
         ),
         '\n',
-        file=sys.stderr,
+        file=_sys.stderr,
     )
 
 
