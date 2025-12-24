@@ -1,13 +1,5 @@
 from __future__ import annotations
-from argparse import ArgumentParser, _SubParsersAction, Namespace
 from enum import Enum, auto, unique
-from inspect import (
-    Parameter,
-    Signature,
-    iscoroutine,
-    iscoroutinefunction,
-    signature,
-)
 from pathlib import Path
 from typing import (
     Final,
@@ -23,8 +15,9 @@ from typing import (
 from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
+    from argparse import ArgumentParser, _SubParsersAction, Namespace
     from collections.abc import Callable, Iterable
-    from inspect import _IntrospectableCallable
+    from inspect import _IntrospectableCallable, Signature, Parameter
 
 
 @final
@@ -469,6 +462,7 @@ class _ArgumentParserBuilder:
             self._add_param(param)
 
     def build(self, obj: '_IntrospectableCallable') -> None:
+        from inspect import signature
         sig = signature(obj, eval_str=True)
         try:
             self._add_signature(sig)
@@ -477,6 +471,7 @@ class _ArgumentParserBuilder:
 
 
 def make_single_parser(task: Task) -> ArgumentParser:
+    from argparse import ArgumentParser
     parser = ArgumentParser(prog=f'clk {task.full_name}')
     builder = _ArgumentParserBuilder(parser)
     builder.build(task.impl)
@@ -511,6 +506,7 @@ def make_parser(ctx: Context) -> 'ArgumentParser':
 
 
 def run(task: Task, ns: Namespace) -> None:
+    from inspect import signature
     args: list[object] = []
 
     for param in signature(task.impl, eval_str=True).parameters.values():
@@ -520,6 +516,7 @@ def run(task: Task, ns: Namespace) -> None:
         else:
             args.append(value)
 
+    from inspect import iscoroutinefunction
     if iscoroutinefunction(task.impl):
         from functools import partial
         import trio
@@ -528,6 +525,7 @@ def run(task: Task, ns: Namespace) -> None:
 
     result = task.impl(*args)
 
+    from inspect import iscoroutine
     if iscoroutine(result):
         import trio
 
