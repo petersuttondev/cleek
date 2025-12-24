@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from __future__ import annotations
 from dataclasses import dataclass as _dataclass
 from typing import (
     Final as _Final,
@@ -11,6 +11,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from inspect import _IntrospectableCallable
 
 
