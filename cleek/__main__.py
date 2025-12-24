@@ -3,8 +3,6 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from cleek._parsers import make_single_parser
-
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Final
@@ -56,6 +54,7 @@ def load_tasks() -> 'ModuleType':
 def print_tasks(tasks: 'dict[str, Task]') -> None:
     from rich.console import Console
     from rich.table import Table
+    from cleek._parsers import make_single_parser
 
     console = Console()
     table = Table()
