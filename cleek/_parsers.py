@@ -21,8 +21,6 @@ from typing import (
     get_args,
 )
 
-from typing_inspect import is_literal_type
-
 from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
@@ -404,9 +402,7 @@ class _ArgumentParserBuilder:
 
     def _pk(self, param: Parameter) -> None:
         annotation = param.annotation
-        if is_literal_type(annotation):
-            self._pk_literal(param, annotation)
-        elif annotation is bool:
+        if annotation is bool:
             self._pk_bool(param)
         elif annotation == bool | None:
             self._pk_optional_bool(param)
@@ -423,7 +419,11 @@ class _ArgumentParserBuilder:
         elif annotation == str | None:
             self._pk_optional_str(param)
         else:
-            raise _Unsupported(f'unsupported annotation {annotation!r}')
+            from typing_inspect import is_literal_type
+            if is_literal_type(annotation):
+                self._pk_literal(param, annotation)
+            else:
+                raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # VAR_POSITIONAL #
 
