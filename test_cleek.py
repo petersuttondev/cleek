@@ -476,7 +476,6 @@ def test_raises_unsupported_signature(run: Run) -> None:
 
 def test_task_with_group() -> None:
     ctx = Context()
-
     group = 'a'
 
     @ctx.task(group=group)
