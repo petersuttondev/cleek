@@ -140,6 +140,7 @@ class UnsupportedSignature(_Unsupported):
 
 _T = TypeVar('_T')
 
+
 @final
 class _ArgumentParserBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
@@ -391,6 +392,15 @@ class _ArgumentParserBuilder:
         else:
             raise _UnsupportedDefault(default)
 
+    # pathlib.Path #
+
+    def _pk_pathlib_path(self, param: Parameter) -> None:
+        default = param.default
+        if default == param.empty:
+            self._add_argument(param.name, type=Path)
+        else:
+            raise _UnsupportedDefault(param.default)
+
     # - #
 
     def _pk(self, param: Parameter) -> None:
@@ -411,8 +421,11 @@ class _ArgumentParserBuilder:
             self._pk_str(param)
         elif annotation == str | None:
             self._pk_optional_str(param)
+        elif annotation is Path:
+            self._pk_pathlib_path(param)
         else:
             from typing_inspect import is_literal_type
+
             if is_literal_type(annotation):
                 self._pk_literal(param, annotation)
             else:
@@ -431,6 +444,7 @@ class _ArgumentParserBuilder:
 
     def _vp_trio_path(self, param: Parameter) -> None:
         import trio
+
         self._vp_type(param, trio.Path)
 
     def _vp(self, param: Parameter) -> None:
@@ -441,6 +455,7 @@ class _ArgumentParserBuilder:
             self._vp_str(param)
         else:
             import trio
+
             if annotation is trio.Path:
                 self._vp_trio_path(param)
             else:
@@ -463,6 +478,7 @@ class _ArgumentParserBuilder:
 
     def build(self, obj: '_IntrospectableCallable') -> None:
         from inspect import signature
+
         sig = signature(obj, eval_str=True)
         try:
             self._add_signature(sig)
@@ -472,6 +488,7 @@ class _ArgumentParserBuilder:
 
 def make_single_parser(task: Task) -> ArgumentParser:
     from argparse import ArgumentParser
+
     parser = ArgumentParser(prog=f'clk {task.full_name}')
     builder = _ArgumentParserBuilder(parser)
     builder.build(task.impl)
@@ -507,6 +524,7 @@ def make_parser(ctx: Context) -> 'ArgumentParser':
 
 def run(task: Task, ns: Namespace) -> None:
     from inspect import signature
+
     args: list[object] = []
 
     for param in signature(task.impl, eval_str=True).parameters.values():
@@ -517,6 +535,7 @@ def run(task: Task, ns: Namespace) -> None:
             args.append(value)
 
     from inspect import iscoroutinefunction
+
     if iscoroutinefunction(task.impl):
         from functools import partial
         import trio
@@ -526,6 +545,7 @@ def run(task: Task, ns: Namespace) -> None:
     result = task.impl(*args)
 
     from inspect import iscoroutine
+
     if iscoroutine(result):
         import trio
 

@@ -128,6 +128,9 @@ def test_p_opt_str_val(run: Run) -> None:
         assert a == val
 
 
+
+
+
 def test_pk_str_def_str(run: Run) -> None:
     val = 'b'
 
@@ -355,6 +358,14 @@ def test_p_literal_str_def_str_arg_str(run: Run) -> None:
         assert isinstance(a, str)
         assert a == val
 
+
+def test_pk_pathlib_path(run: Run) -> None:
+    val = Path().absolute()
+
+    @run(str(val))
+    def _(p: Path) -> None:
+        assert isinstance(p, Path)
+        assert p == val
 
 def test_var_pathlib_path(run: Run) -> None:
     val = (Path('/'), Path('/a'), Path('/a/b'))
