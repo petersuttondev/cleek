@@ -141,6 +141,38 @@ class UnsupportedSignature(_Unsupported):
 _T = TypeVar('_T')
 
 
+def _is_literal_type(annotation: object) -> bool:
+    from typing_inspect import is_literal_type
+
+    return is_literal_type(annotation)
+
+
+def _parse_literal_annotation(
+    annotation: object,
+) -> (
+    tuple[Literal['int'], tuple[int, ...]]
+    | tuple[Literal['str'], tuple[str, ...]]
+):
+    args: tuple[object, ...] = get_args(annotation)
+
+    try:
+        arg = args[0]
+    except KeyError as error:
+        raise _Unsupported('unsupported literal') from error
+
+    def check_rest(t: type[_T]) -> tuple[_T, ...]:
+        if all(isinstance(arg, t) for arg in args[1:]):
+            return cast(tuple[_T, ...], args)
+        raise _Unsupported('unsupported literal')
+
+    if isinstance(arg, int):
+        return 'int', check_rest(int)
+    elif isinstance(arg, str):
+        return 'str', check_rest(str)
+    else:
+        raise _Unsupported('unsupported literal')
+
+
 @final
 class _ArgumentParserBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
@@ -148,6 +180,44 @@ class _ArgumentParserBuilder:
         self._add_argument: Final = self._parser.add_argument
         self._options: Final = _OptionRegistry()
         self._assign_yes: Final = self._options.assign_yes
+
+    # POSITIONAL_ONLY #
+
+    def _p_literal_str_default_empty(
+        self, param: Parameter, choices: Iterable[str]
+    ) -> None:
+        self._add_argument(param.name, choices=choices)
+
+    def _p_literal_str_default_str(
+        self, param: Parameter, choices: Iterable[str]
+    ) -> None:
+        self._add_argument(
+            param.name, nargs='?', default=param.default, choices=choices
+        )
+
+    def _p_literal_str(self, param: Parameter, choices: Iterable[str]) -> None:
+        default = param.default
+
+        if default == param.empty:
+            self._p_literal_str_default_empty(param, choices)
+        elif isinstance(default, str):
+            self._p_literal_str_default_str(param, choices)
+        else:
+            raise _UnsupportedDefault(default)
+
+    def _p_literal(self, param: Parameter, annotation: object) -> None:
+        match _parse_literal_annotation(annotation):
+            case 'str', args:
+                self._p_literal_str(param, args)
+            case _:
+                raise _Unsupported('unsupported literal')
+
+    def _p(self, param: Parameter) -> None:
+        annotation = param.annotation
+        if _is_literal_type(annotation):
+            self._p_literal(param, annotation)
+        else:
+            raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # POSITIONAL_OR_KEYWORD #
 
@@ -202,24 +272,11 @@ class _ArgumentParserBuilder:
         param: Parameter,
         annotation: object,
     ) -> None:
-        args: tuple[object, ...] = get_args(annotation)
-
-        try:
-            arg = args[0]
-        except KeyError as error:
-            raise _Unsupported('unsupported literal') from error
-
-        def check_rest(t: type[_T]) -> tuple[_T, ...]:
-            if all(isinstance(arg, t) for arg in args[1:]):
-                return cast(tuple[_T, ...], args)
-            raise _Unsupported('unsupported literal')
-
-        if isinstance(arg, int):
-            self._pk_literal_int(param, check_rest(int))
-        elif isinstance(arg, str):
-            self._pk_literal_str(param, check_rest(str))
-        else:
-            raise _Unsupported('unsupported literal')
+        match _parse_literal_annotation(annotation):
+            case 'int', args:
+                self._pk_literal_int(param, args)
+            case 'str', args:
+                self._pk_literal_str(param, args)
 
     # bool #
 
@@ -423,13 +480,10 @@ class _ArgumentParserBuilder:
             self._pk_optional_str(param)
         elif annotation is Path:
             self._pk_pathlib_path(param)
+        elif _is_literal_type(annotation):
+            self._pk_literal(param, annotation)
         else:
-            from typing_inspect import is_literal_type
-
-            if is_literal_type(annotation):
-                self._pk_literal(param, annotation)
-            else:
-                raise _Unsupported(f'unsupported annotation {annotation!r}')
+            raise _Unsupported(f'unsupported annotation {annotation!r}')
 
     # VAR_POSITIONAL #
 
@@ -465,6 +519,8 @@ class _ArgumentParserBuilder:
 
     def _add_param(self, param: Parameter) -> None:
         match param.kind:
+            case param.POSITIONAL_ONLY:
+                self._p(param)
             case param.POSITIONAL_OR_KEYWORD:
                 self._pk(param)
             case param.VAR_POSITIONAL:

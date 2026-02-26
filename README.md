@@ -312,6 +312,20 @@ Positional `str` literal
 def foo(a: Literal['a', 'b', 'c']): ...
 ```
 
+Positional only `str` literal
+
+```Python
+@task
+def foo(a: Literal['a', 'b', 'c'], /): ...
+```
+
+Positional only `str` literal with `str` default
+
+```Python
+@task
+def foo(a: Literal['a', 'b', 'c'] = 'a', /): ...
+```
+
 Keyword `int` literal with `int` default
 
 ```Python

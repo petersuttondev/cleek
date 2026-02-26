@@ -128,9 +128,6 @@ def test_p_opt_str_val(run: Run) -> None:
         assert a == val
 
 
-
-
-
 def test_pk_str_def_str(run: Run) -> None:
     val = 'b'
 
@@ -367,6 +364,7 @@ def test_pk_pathlib_path(run: Run) -> None:
         assert isinstance(p, Path)
         assert p == val
 
+
 def test_var_pathlib_path(run: Run) -> None:
     val = (Path('/'), Path('/a'), Path('/a/b'))
 
@@ -517,3 +515,21 @@ def test_check_duplicate_task_name_raises() -> None:
 
     with pytest.raises(ValueError):
         ctx.task(name)(noop)
+
+
+def test_po_str(run: Run) -> None:
+    val = 'a'
+
+    @run(val)
+    def _(a: Literal['a', 'b', 'c'], /) -> None:
+        assert isinstance(a, str)
+        assert a == val
+
+
+def test_po_str_def_str(run: Run) -> None:
+    val = 'a'
+
+    @run()
+    def _(a: Literal['a', 'b', 'c'] = val, /) -> None:
+        assert isinstance(a, str)
+        assert a == val
