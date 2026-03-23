@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections.abc import Callable, Iterator
 from inspect import signature
+import inspect
 from pathlib import Path
 from typing import Literal, Protocol, TYPE_CHECKING
 
@@ -361,6 +362,21 @@ def test_pk_pathlib_path(run: Run) -> None:
 
     @run(str(val))
     def _(p: Path) -> None:
+        assert isinstance(p, Path)
+        assert p == val
+
+
+def test_pk_opt_pathlib_path_def_none(run: Run) -> None:
+    @run()
+    def _(p: Path | None = None) -> None:
+        assert p is None
+
+
+def test_pk_opt_pathlib_path_def_none_arg_str(run: Run) -> None:
+    val = Path().absolute()
+
+    @run('-p', str(val))
+    def _(p: Path | None = None) -> None:
         assert isinstance(p, Path)
         assert p == val
 

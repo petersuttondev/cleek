@@ -458,6 +458,14 @@ class _ArgumentParserBuilder:
         else:
             raise _UnsupportedDefault(param.default)
 
+    def _pk_optional_pathlib_path(self, param: Parameter) -> None:
+        default = param.default
+        dest = param.name
+        if default is None:
+            self._add_argument(*self._assign_yes(dest), type=Path, dest=dest)
+        else:
+            raise _UnsupportedDefault(default)
+
     # - #
 
     def _pk(self, param: Parameter) -> None:
@@ -480,6 +488,8 @@ class _ArgumentParserBuilder:
             self._pk_optional_str(param)
         elif annotation is Path:
             self._pk_pathlib_path(param)
+        elif annotation == Path | None:
+            self._pk_optional_pathlib_path(param)
         elif _is_literal_type(annotation):
             self._pk_literal(param, annotation)
         else:
