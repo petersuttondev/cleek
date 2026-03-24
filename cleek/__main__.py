@@ -21,7 +21,7 @@ def _try_import(path: '_Path', *, is_package: bool) -> '_ModuleType | None':
     spec = importlib.util.spec_from_file_location(
         module_name,
         path,
-        submodule_search_locations=[str(path)] if is_package else None,
+        submodule_search_locations=[str(path.parent)] if is_package else None,
     )
     if spec is None or spec.loader is None:
         return
