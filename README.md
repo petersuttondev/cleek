@@ -342,7 +342,7 @@ def foo(a: Literal['a', 'b', 'c'] = 'a'): ...
 
 ### Misc
 
-Keyword `pathlib.path` with `None` default
+Keyword optional `pathlib.path` with `None` default
 
 ```Python
 from pathlib import Path
@@ -350,7 +350,6 @@ from pathlib import Path
 @task
 def foo(a: Path | None = None): ...
 ```
-
 
 Variadic positional `pathlib.Path`
 
