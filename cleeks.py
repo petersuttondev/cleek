@@ -11,13 +11,19 @@ if TYPE_CHECKING:
 # -- Tasks ---------------------------------------------------------------------
 
 @task
-def clean(dry_run: bool = False) -> None:
+def clean(dry_run: bool = False, autoenv: bool = False) -> None:
     import shlex
     import subprocess
 
     args = ['git', 'clean', '--force']
     if dry_run:
         args.append('--dry-run')
+
+    def exclude(pattern: str) -> None:
+        args.append(f'--exclude=!{pattern}')
+
+    if not autoenv:
+        exclude('.autoenv*')
     args.append('-X')
     args.append('.')
     print(shlex.join(args))
