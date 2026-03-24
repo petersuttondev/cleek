@@ -92,10 +92,16 @@ class _Customize:
         return self._ctx.task(implOrName, group=group, style=style)
 
 
+
 @_final
 class Context:
     def __init__(self) -> None:
         self.tasks: _Final[dict[str, Task]] = {}
+        self.prepend_to_path = False
+
+    def config(self, *, prepend_to_path: bool | None = None) -> None:
+        if prepend_to_path is not None:
+            self.prepend_to_path = prepend_to_path
 
     def customize(
         self,

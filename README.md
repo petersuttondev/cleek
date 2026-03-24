@@ -164,6 +164,23 @@ $ clk
 └───────┴────────────────┘
 ```
 
+## Configuration
+
+Sometimes it's useful to the directory your `cleeks` live in to be on the Python
+path. For example, if your tasks use `multiprocessing`. `cleek` can do that for
+you:
+
+```Python
+from cleek import config, task
+
+config(prepend_to_path=True)
+
+
+@task
+def foo() -> None:
+    ...
+```
+
 ## Shell Completion
 
 Shell completion is provided by `argcomplete`:

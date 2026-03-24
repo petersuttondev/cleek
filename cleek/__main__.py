@@ -6,52 +6,72 @@ from typing import TYPE_CHECKING as _TYPE_CHECKING
 if _TYPE_CHECKING:
     from pathlib import Path as _Path
     from typing import Final as _Final
-    from types import ModuleType, TracebackType
+    from types import ModuleType as _ModuleType, TracebackType as _TracebackType
 
-    from cleek._tasks import Task
+    from cleek._tasks import Task as _Task
 
 
-def try_import(path: '_Path') -> 'ModuleType | None':
+def _try_import(path: '_Path', *, is_package: bool) -> '_ModuleType | None':
     import importlib.util
     import sys
 
     if not path.exists():
         return
     module_name = 'cleeks'
-    spec = importlib.util.spec_from_file_location(module_name, path)
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        path,
+        submodule_search_locations=[str(path)] if is_package else None,
+    )
     if spec is None or spec.loader is None:
-        return None
+        return
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def load_tasks() -> 'ModuleType':
+def _load_tasks() -> None:
     import os
     from pathlib import Path
+    import sys
 
     root_path = os.environ.get('CLEEKS_PATH')
-    if root_path is not None:
+    if root_path is None:
+        parent_path = Path().resolve(strict=True)
+        root_path = Path('/')
+        while True:
+            cleeks = _try_import(
+                parent_path / 'cleeks.py',
+                is_package=False,
+            ) or _try_import(
+                parent_path / 'cleeks/__init__.py',
+                is_package=True,
+            )
+            if cleeks is not None:
+                break
+            parent_path = parent_path.parent
+            if parent_path == root_path:
+                raise FileNotFoundError('Cannot find cleeks')
+    else:
         root_path = Path(root_path).resolve(strict=True)
-        cleeks = try_import(root_path) or try_import(root_path / '__init__.py')
+        cleeks = _try_import(
+            root_path,
+            is_package=False,
+        ) or _try_import(
+            root_path / '__init__.py',
+            is_package=True,
+        )
         if cleeks is None:
             raise FileNotFoundError('Cannot find cleeks')
-        return cleeks
-    parent_path = Path().resolve(strict=True)
-    root_path = Path('/')
-    while True:
-        cleeks = try_import(parent_path / 'cleeks.py') or try_import(
-            parent_path / 'cleeks/__init__.py'
-        )
-        if cleeks is not None:
-            return cleeks
-        parent_path = parent_path.parent
-        if parent_path == root_path:
-            raise FileNotFoundError('Cannot find cleeks')
+        parent_path = root_path.parent
+    from cleek import _ctx
+
+    if _ctx.prepend_to_path:
+        sys.path.insert(0, str(parent_path))
 
 
-def print_tasks(tasks: 'dict[str, Task]') -> None:
+def print_tasks(tasks: 'dict[str, _Task]') -> None:
     from rich.console import Console
     from rich.table import Table
     from cleek._parsers import make_single_parser
@@ -79,7 +99,7 @@ _prev_excepthook: '_Final' = _sys.excepthook
 def _excepthook(
     type: type[BaseException],
     value: BaseException,
-    traceback: 'TracebackType',
+    traceback: '_TracebackType',
 ) -> None:
     _prev_excepthook(type, value, traceback)
     from cleek._parsers import UnsupportedSignature
@@ -101,12 +121,11 @@ def _excepthook(
     )
 
 
-
 def main() -> None:
     import sys
 
     try:
-        load_tasks()
+        _load_tasks()
     except FileNotFoundError as error:
         if len(sys.argv) != 2 or sys.argv[1] != '--completion':
             print(error, file=sys.stderr)
@@ -114,6 +133,7 @@ def main() -> None:
 
     from cleek import _ctx as ctx
     from cleek._parsers import make_parser
+
     parser = make_parser(ctx)
     ns = parser.parse_args()
 

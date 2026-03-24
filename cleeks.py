@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 # -- Tasks ---------------------------------------------------------------------
 
-
 @task
 def clean(dry_run: bool = False) -> None:
     import shlex

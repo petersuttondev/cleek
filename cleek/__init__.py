@@ -2,5 +2,6 @@ from __future__ import annotations as _annotations
 from cleek._tasks import Context as _Context
 
 _ctx = _Context()
+config = _ctx.config
 customize = _ctx.customize
 task = _ctx.task

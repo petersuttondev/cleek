@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from inspect import signature
 import inspect
+from os import environ
 from pathlib import Path
 from typing import Literal, Protocol, TYPE_CHECKING
 
@@ -549,3 +550,27 @@ def test_po_str_def_str(run: Run) -> None:
     def _(a: Literal['a', 'b', 'c'] = val, /) -> None:
         assert isinstance(a, str)
         assert a == val
+
+
+def test_multiprocesing() -> None:
+    import os
+    import subprocess
+    from collections import ChainMap
+    from pathlib import Path
+
+    project_dir = Path(__file__).resolve(strict=True).parent
+    fixtures_dir = project_dir / 'fixtures'
+    cleeks_path = fixtures_dir / 'multiprocessing/cleeks'
+
+    proc = subprocess.run(
+        ('clk', 'test'),
+        stdout=subprocess.PIPE,
+        env=ChainMap(
+            {'CLEEKS_PATH': str(cleeks_path)},
+            os.environ,
+        ),
+        check=True,
+        text=True,
+    )
+
+    assert proc.stdout == 'multiprocessing\n'
