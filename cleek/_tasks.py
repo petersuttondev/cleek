@@ -133,7 +133,7 @@ class Context:
 
     def task(
         self,
-        implOrName: Callable[_P, _T] | str | None = None,
+        impl_or_name: Callable[_P, _T] | str | None = None,
         /,
         *,
         group: str | None = None,
@@ -149,20 +149,20 @@ class Context:
             self.tasks[task.full_name] = task
             return impl
 
-        if implOrName is None:
+        if impl_or_name is None:
 
             def unnamed_task(impl: Callable[_P, _T]) -> Callable[_P, _T]:
                 return register(task_name_from_impl(impl), impl)
 
             return unnamed_task
 
-        if isinstance(implOrName, str):
-            name = implOrName
+        if isinstance(impl_or_name, str):
+            name = impl_or_name
 
             def named_task(impl: Callable[_P, _T]) -> Callable[_P, _T]:
                 return register(name, impl)
 
             return named_task
 
-        impl = implOrName
+        impl = impl_or_name
         return register(task_name_from_impl(impl), impl)
