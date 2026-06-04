@@ -285,6 +285,12 @@ Keyword `int` with `int` default
 def foo(a: int = 1): ...
 ```
 
+Poitisonal optinal `int`
+
+```Python
+def foo(a: int | None): ...
+```
+
 Keyword optional `int` with `int` or `None` default
 
 ```Python
