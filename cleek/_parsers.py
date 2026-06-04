@@ -388,16 +388,33 @@ class _ArgumentParserBuilder:
         else:
             raise _UnsupportedDefault(default)
 
-    def _pk_optional_int(self, param: Parameter) -> None:
+    def _pk_optional_int_default_empty(self, param: Parameter) -> None:
+        self._add_argument(param.name, nargs='?', type=int)
+
+    def _pk_optional_int_default_int(self, param: Parameter) -> None:
         dest = param.name
-        default = None if param.default == param.empty else param.default
         self._add_argument(
             *self._assign_yes(dest),
             type=int,
             default=param.default,
-            help=None if default is None else 'default: %(default)s',
+            help='default: %(default)s',
             dest=dest,
         )
+
+    def _pk_optional_int_default_none(self, param: Parameter) -> None:
+        dest = param.name
+        self._add_argument(*self._assign_yes(dest), type=int, dest=dest)
+
+    def _pk_optional_int(self, param: Parameter) -> None:
+        default = param.default
+        if default == param.empty:
+            self._pk_optional_int_default_empty(param)
+        elif isinstance(default, int):
+            self._pk_optional_int_default_int(param)
+        elif default is None:
+            self._pk_optional_int_default_none(param)
+        else:
+            raise _UnsupportedDefault(default)
 
     # str #
 

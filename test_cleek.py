@@ -1,8 +1,6 @@
 from __future__ import annotations
 from collections.abc import Callable, Iterator
 from inspect import signature
-import inspect
-from os import environ
 from pathlib import Path
 from typing import Literal, Protocol, TYPE_CHECKING
 
@@ -208,6 +206,20 @@ def test_pk_int_def_int(run: Run) -> None:
     @run()
     def _(a: int = val) -> None:
         assert isinstance(a, int)
+        assert a == val
+
+
+def test_pk_opt_int(run: Run) -> None:
+    @run()
+    def _(a: int | None) -> None:
+        assert a is None
+
+
+def test_pk_opt_int_arg_int(run: Run) -> None:
+    val = 1
+
+    @run(val)
+    def _(a: int | None) -> None:
         assert a == val
 
 
