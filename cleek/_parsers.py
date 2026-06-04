@@ -157,7 +157,7 @@ def _parse_literal_annotation(
 
     try:
         arg = args[0]
-    except KeyError as error:
+    except IndexError as error:
         raise _Unsupported('unsupported literal') from error
 
     def check_rest(t: type[_T]) -> tuple[_T, ...]:
