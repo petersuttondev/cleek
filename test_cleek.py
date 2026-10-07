@@ -407,7 +407,7 @@ def test_pk_pathlib_pure_posix_path(run: Run) -> None:
 
     @run(str(val))
     def _(p: PurePosixPath) -> None:
-        assert isinstance(p, PurePosixPath)
+        assert type(p) is PurePosixPath
         assert p == val
 
 
@@ -422,7 +422,7 @@ def test_pk_opt_pathlib_pure_posix_path_def_none_arg_str(run: Run) -> None:
 
     @run('-p', str(val))
     def _(p: PurePosixPath | None = None) -> None:
-        assert isinstance(p, PurePosixPath)
+        assert type(p) is PurePosixPath
         assert p == val
 
 

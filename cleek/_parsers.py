@@ -492,9 +492,9 @@ class _ArgumentParserBuilder:
         else:
             raise _UnsupportedDefault(default)
 
-    def _pk_optional_pathlib_pure_posix(self, param: Paramter) -> None:
+    def _pk_optional_pathlib_pure_posix_path(self, param: Parameter) -> None:
         default = param.default
-        dest = para.name
+        dest = param.name
         if default is None:
             self._add_argument(
                 *self._assign_yes(dest),
@@ -531,7 +531,7 @@ class _ArgumentParserBuilder:
         elif annotation is PurePosixPath:
             self._pk_pathlib_pure_posix_path(param)
         elif annotation == PurePosixPath | None:
-            self._pk_optional_pathlib_path(param)
+            self._pk_optional_pathlib_pure_posix_path(param)
         elif _is_literal_type(annotation):
             self._pk_literal(param, annotation)
         else:
