@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from inspect import _IntrospectableCallable
 
-
     class SupportsDunderName(_Protocol):
         __name__: str
 
@@ -90,7 +89,6 @@ class _Customize:
         if style is None:
             style = self._style
         return self._ctx.task(implOrName, group=group, style=style)
-
 
 
 @_final

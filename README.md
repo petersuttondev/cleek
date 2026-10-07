@@ -5,9 +5,9 @@
 ```Python
 from cleek import task
 
+
 @task
-def binary_op(x: int, y: int, op: Literal['add', 'sub'] = 'add') -> None:
-    ...
+def binary_op(x: int, y: int, op: Literal['add', 'sub'] = 'add') -> None: ...
 ```
 
 <p align=center><b>⬇️ Becomes ⬇️</b></p>
@@ -32,14 +32,14 @@ options:
 ### PyPI
 
 ```ShellSession
-$ pip install cleek
+pip install cleek
 ```
 
 ### GitHub
 
 ```ShellSession
-$ git clone https://github.com/petersuttondev/cleek.git
-$ pip install ./cleek
+git clone https://github.com/petersuttondev/cleek.git
+pip install ./cleek
 ```
 
 ## Get Started
@@ -49,12 +49,13 @@ $ pip install ./cleek
 ```Python
 from cleek import task
 
+
 @task
 def greet(name: str) -> None:
     print(f'Hello, {name}!')
 ```
 
-2. Run `clk` from anywhere inside your project to see your tasks.
+1. Run `clk` from anywhere inside your project to see your tasks.
 
 ```ShellSession
 $ clk
@@ -65,7 +66,7 @@ $ clk
 └───────┴─────────────────────┘
 ```
 
-3. Run `clk <task> -h` to print a task's help.
+1. Run `clk <task> -h` to print a task's help.
 
 ```ShellSession
 $ clk greet
@@ -78,7 +79,7 @@ options:
   -h, --help  show this help message and exit
 ```
 
-4. Run a task.
+1. Run a task.
 
 ```ShellSession
 $ clk greet Peter
@@ -91,6 +92,7 @@ Set a task's name:
 
 ```Python
 from cleek import task
+
 
 @task('bar')
 def foo() -> None:
@@ -106,6 +108,7 @@ Set a task's group:
 
 ```Python
 from cleek import task
+
 
 @task(group='foo')
 def bar() -> None:
@@ -124,6 +127,7 @@ styles.
 ```Python
 from cleek import task
 
+
 @task(style='red')
 def foo() -> None:
     print("I'll be red if you run clk")
@@ -137,16 +141,21 @@ from cleek import customize
 
 foo_task = customize('foo', style='red')
 
+
 @foo_task
 def a() -> None: ...
+
 
 @foo_task
 def b() -> None: ...
 
+
 bar_task = customize('bar', style='blue')
+
 
 @bar_task
 def c() -> None: ...
+
 
 @bar_task
 def d() -> None: ...
@@ -177,8 +186,7 @@ config(prepend_to_path=True)
 
 
 @task
-def foo() -> None:
-    ...
+def foo() -> None: ...
 ```
 
 ## Shell Completion
@@ -196,6 +204,7 @@ Your tasks can be `async` functions:
 ```Python
 from cleek import task
 import trio
+
 
 @task
 async def sleep(duration: float = 1.0) -> None:
@@ -251,7 +260,7 @@ Positional optional `str`
 ```Python
 def foo(a: str | None): ...
 ```
- 
+
 Keyword `str` with `str` default
 
 ```Python
@@ -365,19 +374,39 @@ def foo(a: Literal['a', 'b', 'c'] = 'a'): ...
 
 ### Misc
 
-Keyword optional `pathlib.path` with `None` default
+Positional `pathlib.Path` or `pathlib.PurePosixPath`
+
+```Python
+from pathlib import Path, PurePosixPath
+
+
+@task
+def foo(a: Path): ...
+
+
+@task
+def bar(b: PurePosixPath): ...
+```
+
+Keyword optional `pathlib.Path` or `pathlib.PurePosixPath` with `None` default
 
 ```Python
 from pathlib import Path
 
+
 @task
 def foo(a: Path | None = None): ...
+
+
+@task
+def bar(a: PurePosixPath | None = None): ...
 ```
 
 Variadic positional `pathlib.Path`
 
 ```Python
 from pathlib import Path
+
 
 @task
 def foo(*a: Path): ...
@@ -388,7 +417,7 @@ Variadic positional `trio.Path`
 ```Python
 from trio import Path
 
+
 @task
 def foo(*a: Path): ...
 ```
-

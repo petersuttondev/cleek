@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections.abc import Callable, Iterator
 from inspect import signature
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Literal, Protocol, TYPE_CHECKING
 
 import pytest
@@ -400,6 +400,30 @@ def test_var_pathlib_path(run: Run) -> None:
     @run(*val)
     def _(*a: Path) -> None:
         assert a == val
+
+
+def test_pk_pathlib_pure_posix_path(run: Run) -> None:
+    val = Path().absolute()
+
+    @run(str(val))
+    def _(p: PurePosixPath) -> None:
+        assert isinstance(p, PurePosixPath)
+        assert p == val
+
+
+def test_pk_opt_pathlib_pure_posix_path_def_none(run: Run) -> None:
+    @run()
+    def _(p: PurePosixPath | None = None) -> None:
+        assert p is None
+
+
+def test_pk_opt_pathlib_pure_posix_path_def_none_arg_str(run: Run) -> None:
+    val = Path().absolute()
+
+    @run('-p', str(val))
+    def _(p: PurePosixPath | None = None) -> None:
+        assert isinstance(p, PurePosixPath)
+        assert p == val
 
 
 def test_var_trio_path(run: Run) -> None:

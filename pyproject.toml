@@ -37,3 +37,14 @@ clk = "cleek.__main__:main"
 
 [dependency-groups]
 dev = ["build", "pytest"]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+quote-style = "single"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

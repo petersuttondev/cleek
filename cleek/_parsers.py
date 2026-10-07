@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from enum import Enum, auto, unique
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import (
+    TYPE_CHECKING,
     Final,
     Literal,
     NamedTuple,
-    TYPE_CHECKING,
     TypeVar,
     cast,
     final,
@@ -15,9 +16,9 @@ from typing import (
 from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, _SubParsersAction, Namespace
+    from argparse import ArgumentParser, Namespace, _SubParsersAction
     from collections.abc import Callable, Iterable
-    from inspect import _IntrospectableCallable, Signature, Parameter
+    from inspect import Parameter, Signature, _IntrospectableCallable
 
 
 @final
@@ -94,8 +95,7 @@ class _OptionRegistry:
                 option = f'-{char}'
                 if option not in self._reserved:
                     return option
-        else:
-            raise ValueError(f'cannot find free short option for {dest!r}')
+        raise ValueError(f'cannot find free short option for {dest!r}')
 
     def find_free_long(self, kind: _OptionKind, dest: str) -> str:
         parts = ['--']
@@ -473,13 +473,34 @@ class _ArgumentParserBuilder:
         if default == param.empty:
             self._add_argument(param.name, type=Path)
         else:
-            raise _UnsupportedDefault(param.default)
+            raise _UnsupportedDefault(default)
 
     def _pk_optional_pathlib_path(self, param: Parameter) -> None:
         default = param.default
         dest = param.name
         if default is None:
             self._add_argument(*self._assign_yes(dest), type=Path, dest=dest)
+        else:
+            raise _UnsupportedDefault(default)
+
+    # pathlib.PurePosixPath #
+
+    def _pk_pathlib_pure_posix_path(self, param: Parameter) -> None:
+        default = param.default
+        if default == param.empty:
+            self._add_argument(param.name, type=PurePosixPath)
+        else:
+            raise _UnsupportedDefault(default)
+
+    def _pk_optional_pathlib_pure_posix(self, param: Paramter) -> None:
+        default = param.default
+        dest = para.name
+        if default is None:
+            self._add_argument(
+                *self._assign_yes(dest),
+                type=PurePosixPath,
+                dest=dest,
+            )
         else:
             raise _UnsupportedDefault(default)
 
@@ -506,6 +527,10 @@ class _ArgumentParserBuilder:
         elif annotation is Path:
             self._pk_pathlib_path(param)
         elif annotation == Path | None:
+            self._pk_optional_pathlib_path(param)
+        elif annotation is PurePosixPath:
+            self._pk_pathlib_pure_posix_path(param)
+        elif annotation == PurePosixPath | None:
             self._pk_optional_pathlib_path(param)
         elif _is_literal_type(annotation):
             self._pk_literal(param, annotation)
@@ -589,8 +614,10 @@ def add_subparser(
 
 def make_parser(ctx: Context) -> 'ArgumentParser':
     from argparse import ArgumentParser
-    from cleek._parsers import add_subparser
+
     import argcomplete
+
+    from cleek._parsers import add_subparser
 
     parser = ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers(
@@ -621,6 +648,7 @@ def run(task: Task, ns: Namespace) -> None:
 
     if iscoroutinefunction(task.impl):
         from functools import partial
+
         import trio
 
         return trio.run(partial(task.impl, *args))
