@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cleek"
-version = "0.8.0"
+version = "1.0.0"
 authors = [
   { name="Peter Sutton", email="peter@foxdogstudio.com" },
 ]
@@ -12,7 +12,7 @@ description = "A simple task runner that generates command line interfaces"
 readme = "README.md"
 requires-python = ">= 3.10"
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Framework :: Trio",
   "Intended Audience :: Developers",
