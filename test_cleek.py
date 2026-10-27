@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterator
 from inspect import signature
 from pathlib import Path, PurePosixPath
@@ -685,3 +686,56 @@ def test_customize_backend() -> None:
 
     assert ctx.tasks['a'].backend == 'asyncio'
     assert ctx.tasks['b'].backend == 'trio'
+
+
+@pytest.mark.parametrize(
+    ('env', 'task', 'expected'),
+    [
+        (None, None, 'trio'),
+        ('asyncio', None, 'asyncio'),
+        ('trio', None, 'trio'),
+        ('bogus', None, False),
+        ('', None, 'trio'),
+        (None, 'asyncio', 'asyncio'),
+        (None, 'trio', 'trio'),
+        ('asyncio', 'asyncio', 'asyncio'),
+        ('asyncio', 'trio', 'trio'),
+        ('trio', 'asyncio', 'asyncio'),
+        ('trio', 'trio', 'trio'),
+        ('bogus', 'asyncio', 'asyncio'),
+        ('bogus', 'trio', 'trio'),
+        ('', 'asyncio', 'asyncio'),
+        ('', 'trio', 'trio'),
+    ],
+)
+def test_cleek_backend_env(
+    monkeypatch: pytest.MonkeyPatch,
+    env: str | None,
+    task: Literal['asyncio', 'trio'] | None,
+    expected: Literal['asyncio', 'trio', False],
+) -> None:
+    key = 'CLEEK_BACKEND'
+
+    if env is None:
+        monkeypatch.delenv(key, raising=False)
+    else:
+        monkeypatch.setenv(key, env)
+
+    ctx = Context()
+    name = 't'
+    register = ctx.task(name, backend=task)
+
+    if expected is False:
+        assert env is not None
+        with pytest.raises(ValueError, match=re.escape(env)):
+            _ = register(noop)
+    else:
+        _ = register(noop)
+        assert ctx.tasks[name].backend == expected
+
+
+def test_customize_backend_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('CLEEK_BACKEND', 'trio')
+    ctx = Context()
+    _ = ctx.customize(backend='asyncio')(noop)
+    assert ctx.tasks['noop'].backend == 'asyncio'

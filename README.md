@@ -214,7 +214,10 @@ async def sleep(duration: float = 1.0) -> None:
 
 Cleek runs async tasks with `anyio`. Select the backend with
 `@task(backend='asyncio')` or `@task(backend='trio')`, or for a set of tasks
-with `customize(backend=...)`. `trio` is the default backend.
+with `customize(backend=...)`. `trio` is the default backend unless the
+environment variable `CLEEK_BACKEND` is set to `asyncio` or `trio`
+(case-sensitive). `@task(backend=...)` takes precedence over
+`customize(backend=...)`, which takes precedence over `CLEEK_BACKEND`.
 
 ## Finding Tasks
 
