@@ -647,20 +647,18 @@ def run(task: Task, ns: Namespace) -> None:
     from inspect import iscoroutinefunction
 
     if iscoroutinefunction(task.impl):
-        from functools import partial
+        import anyio
 
-        import trio
-
-        return trio.run(partial(task.impl, *args))
+        return anyio.run(task.impl, *args, backend=task.backend)
 
     result = task.impl(*args)
 
     from inspect import iscoroutine
 
     if iscoroutine(result):
-        import trio
+        import anyio
 
         async def run_result():
             return await result
 
-        return trio.run(run_result)
+        return anyio.run(run_result, backend=task.backend)

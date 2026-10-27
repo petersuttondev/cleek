@@ -1,12 +1,13 @@
 # PYTHON_ARGCOMPLETE_OK
 from __future__ import annotations as _annotations
+
 import sys as _sys
 from typing import TYPE_CHECKING as _TYPE_CHECKING
 
 if _TYPE_CHECKING:
     from pathlib import Path as _Path
-    from typing import Final as _Final
     from types import ModuleType as _ModuleType, TracebackType as _TracebackType
+    from typing import Final as _Final
 
     from cleek._tasks import Task as _Task
 
@@ -33,8 +34,8 @@ def _try_import(path: '_Path', *, is_package: bool) -> '_ModuleType | None':
 
 def _load_tasks() -> None:
     import os
-    from pathlib import Path
     import sys
+    from pathlib import Path
 
     root_path = os.environ.get('CLEEKS_PATH')
     if root_path is None:
@@ -74,6 +75,7 @@ def _load_tasks() -> None:
 def print_tasks(tasks: 'dict[str, _Task]') -> None:
     from rich.console import Console
     from rich.table import Table
+
     from cleek._parsers import make_single_parser
 
     console = Console()

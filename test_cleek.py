@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from collections.abc import Callable, Iterator
 from inspect import signature
 from pathlib import Path, PurePosixPath
-from typing import Literal, Protocol, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Protocol
 
 import pytest
 import trio
@@ -20,8 +21,7 @@ def noop() -> None:  # pragma: no cover
 
 class Run(Protocol):
     def __call__(
-        self,
-        *args: object,
+        self, *args: object, backend: Literal['asyncio', 'trio'] | None = ...
     ) -> Callable[['_IntrospectableCallable'], None]: ...
 
 
@@ -29,9 +29,12 @@ class Run(Protocol):
 def run() -> Iterator[Run]:
     ctx = Context()
 
-    def capture_args(*args: object):
+    def capture_args(
+        *args: object,
+        backend: Literal['asyncio', 'trio'] | None = None,
+    ):
         def capture_impl(impl: '_IntrospectableCallable'):
-            ctx.task(impl)
+            ctx.task(impl, backend=backend)
             name = task_name_from_impl(impl)
             ns = make_parser(ctx).parse_args(
                 (name, *(str(arg) for arg in args))
@@ -459,6 +462,64 @@ def test_impl_returns_coro(run: Run) -> None:
     assert called
 
 
+def test_coro_func_impl_asyncio_backend(run: Run) -> None:
+    called = False
+
+    @run(backend='asyncio')
+    async def _() -> None:
+        nonlocal called
+        import asyncio
+
+        await asyncio.sleep(0)
+        called = True
+
+    assert called
+
+
+def test_impl_returns_coro_asyncio_backend(run: Run) -> None:
+    called = False
+
+    @run(backend='asyncio')
+    def _():
+        async def foo():
+            nonlocal called
+            import asyncio
+
+            await asyncio.sleep(0)
+            called = True
+
+        return foo()
+
+    assert called
+
+
+def test_coro_func_impl_trio_backend(run: Run) -> None:
+    called = False
+
+    @run(backend='trio')
+    async def _() -> None:
+        nonlocal called
+        await trio.lowlevel.checkpoint()
+        called = True
+
+    assert called
+
+
+def test_impl_returns_coro_trio_backend(run: Run) -> None:
+    called = False
+
+    @run(backend='trio')
+    def _():
+        async def foo():
+            nonlocal called
+            await trio.lowlevel.checkpoint()
+            called = True
+
+        return foo()
+
+    assert called
+
+
 def test_full_name() -> None:
     name = 'bar'
     group = 'foo'
@@ -485,7 +546,7 @@ def test_check_free_raises_when_passed_reserved_long() -> None:
 
 
 def test_find_free_short_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _OptionRegistry, _YES
+    from cleek._parsers import _YES, _OptionRegistry
 
     reg = _OptionRegistry(yes_chars='a', no_chars='A')
     reg.reserve_short('-a')
@@ -494,7 +555,7 @@ def test_find_free_short_raises_when_no_free_lower() -> None:
 
 
 def test_find_free_short_raises_when_no_free_upper() -> None:
-    from cleek._parsers import _OptionRegistry, _NO
+    from cleek._parsers import _NO, _OptionRegistry
 
     reg = _OptionRegistry(no_chars='A')
     reg.reserve_short('-A')
@@ -503,7 +564,7 @@ def test_find_free_short_raises_when_no_free_upper() -> None:
 
 
 def test_find_free_long_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _OptionRegistry, _YES
+    from cleek._parsers import _YES, _OptionRegistry
 
     reg = _OptionRegistry(no_chars='A')
     dest = 'long'
@@ -610,3 +671,17 @@ def test_multiprocesing() -> None:
     )
 
     assert proc.stdout == 'multiprocessing\n'
+
+
+def test_customize_backend() -> None:
+    ctx = Context()
+    asyncio_task = ctx.customize(backend='asyncio')
+
+    @asyncio_task
+    async def a() -> None: ...
+
+    @asyncio_task(backend='trio')
+    async def b() -> None: ...
+
+    assert ctx.tasks['a'].backend == 'asyncio'
+    assert ctx.tasks['b'].backend == 'trio'

@@ -212,8 +212,9 @@ async def sleep(duration: float = 1.0) -> None:
     await trio.sleep(duration)
 ```
 
-At the moment, `trio` is the only supported event loop. If want to use another
-event loop (I'm guessing `asyncio`), open an issue and I'll add it.
+Cleek runs async tasks with `anyio`. Select the backend with
+`@task(backend='asyncio')` or `@task(backend='trio')`, or for a set of tasks
+with `customize(backend=...)`. `trio` is the default backend.
 
 ## Finding Tasks
 

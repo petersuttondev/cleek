@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass as _dataclass
 from typing import (
-    Final as _Final,
     TYPE_CHECKING,
+    Final as _Final,
+    Literal,
     ParamSpec,
     Protocol as _Protocol,
     TypeVar,
@@ -12,10 +14,13 @@ from typing import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from inspect import _IntrospectableCallable
+    from inspect import _IntrospectableCallable  # pyright: ignore[reportPrivateUsage]
 
     class SupportsDunderName(_Protocol):
         __name__: str
+
+
+_DEFAULT_BACKEND: _Final = 'trio'
 
 
 @_final
@@ -25,6 +30,7 @@ class Task:
     name: _Final[str]
     group: _Final[str | None] = None
     style: _Final[str | None] = None
+    backend: _Final[Literal['asyncio', 'trio']] = _DEFAULT_BACKEND
 
     @property
     def full_name(self) -> str:
@@ -51,10 +57,12 @@ class _Customize:
         group: str | None = None,
         *,
         style: str | None = None,
+        backend: Literal['asyncio', 'trio'] | None = None,
     ) -> None:
         self._ctx: _Final = ctx
         self._group: _Final = group
         self._style: _Final = style
+        self._backend: _Final = backend
 
     @_overload
     def __call__(
@@ -64,6 +72,7 @@ class _Customize:
         *,
         group: str | None = ...,
         style: str | None = ...,
+        backend: Literal['asyncio', 'trio'] | None = ...,
     ) -> Callable[_P, _T]: ...
 
     @_overload
@@ -74,6 +83,7 @@ class _Customize:
         *,
         group: str | None = ...,
         style: str | None = ...,
+        backend: Literal['asyncio', 'trio'] | None = ...,
     ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
 
     def __call__(
@@ -83,12 +93,20 @@ class _Customize:
         *,
         group: str | None = None,
         style: str | None = None,
+        backend: Literal['asyncio', 'trio'] | None = None,
     ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
         if group is None:
             group = self._group
         if style is None:
             style = self._style
-        return self._ctx.task(implOrName, group=group, style=style)
+        if backend is None:
+            backend = self._backend
+        return self._ctx.task(
+            implOrName,
+            group=group,
+            style=style,
+            backend=backend,
+        )
 
 
 @_final
@@ -106,8 +124,9 @@ class Context:
         group: str | None = None,
         *,
         style: str | None = None,
+        backend: Literal['asyncio', 'trio'] | None = None,
     ) -> _Customize:
-        return _Customize(self, group=group, style=style)
+        return _Customize(self, group=group, style=style, backend=backend)
 
     @_overload
     def task(
@@ -117,6 +136,7 @@ class Context:
         *,
         group: str | None = ...,
         style: str | None = ...,
+        backend: Literal['asyncio', 'trio'] | None = ...,
     ) -> Callable[_P, _T]: ...
 
     @_overload
@@ -127,6 +147,7 @@ class Context:
         *,
         group: str | None = ...,
         style: str | None = ...,
+        backend: Literal['asyncio', 'trio'] | None = ...,
     ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
 
     def task(
@@ -136,9 +157,17 @@ class Context:
         *,
         group: str | None = None,
         style: str | None = None,
+        backend: Literal['asyncio', 'trio'] | None = None,
     ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
         def register(name: str, impl: Callable[_P, _T]) -> Callable[_P, _T]:
-            task = Task(impl=impl, name=name, group=group, style=style)
+            task = Task(
+                impl=impl,
+                name=name,
+                group=group,
+                style=style,
+                backend=backend or _DEFAULT_BACKEND,
+            )
+
             full_name = task.full_name
 
             if full_name in self.tasks:
