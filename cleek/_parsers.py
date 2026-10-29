@@ -1,24 +1,33 @@
 from __future__ import annotations
 
+import operator
+import sys
 from enum import Enum, auto, unique
+from functools import reduce
 from pathlib import Path, PurePosixPath
+from types import UnionType
 from typing import (
     TYPE_CHECKING,
     Final,
     Literal,
     NamedTuple,
     TypeVar,
+    Union,  # pyright: ignore[reportDeprecated]
     cast,
     final,
     get_args,
+    get_origin,
 )
+
+if sys.version_info >= (3, 12):
+    from typing import TypeAliasType
 
 from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, Namespace, _SubParsersAction
+    from argparse import ArgumentParser, Namespace, _SubParsersAction  # pyright: ignore[reportPrivateUsage]
     from collections.abc import Callable, Iterable
-    from inspect import Parameter, Signature, _IntrospectableCallable
+    from inspect import Parameter, Signature, _IntrospectableCallable  # pyright: ignore[reportPrivateUsage]
 
 
 @final
@@ -171,6 +180,29 @@ def _parse_literal_annotation(
         return 'str', check_rest(str)
     else:
         raise _Unsupported('unsupported literal')
+
+
+def _unwrap_alias_forever(annotation: object) -> object:
+    if sys.version_info >= (3, 12) and isinstance(annotation, TypeAliasType):
+        return _unwrap_alias_forever(annotation.__value__)
+    if isinstance(annotation, UnionType) or get_origin(annotation) is Union:  # pyright: ignore[reportDeprecated]
+        return reduce(
+            operator.or_, map(_unwrap_alias_forever, get_args(annotation))
+        )
+    return annotation
+
+
+def _unwrap_alias(annotation: object) -> object:
+    try:
+        return _unwrap_alias_forever(annotation)
+    except NameError as error:
+        raise _Unsupported('cannot unwrap alias') from error
+    except RecursionError:
+        raise _Unsupported(
+            'alias too deeply nested or infinitely recursive'
+        ) from None
+    except TypeError as error:
+        raise _Unsupported('cannot rebuild union') from error
 
 
 @final
@@ -570,6 +602,7 @@ class _ArgumentParserBuilder:
     # -- #
 
     def _add_param(self, param: Parameter) -> None:
+        param = param.replace(annotation=_unwrap_alias(param.annotation))
         match param.kind:
             case param.POSITIONAL_ONLY:
                 self._p(param)

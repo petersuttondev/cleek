@@ -1,53 +1,22 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator
 from inspect import signature
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Optional, TypeAlias, Union  # pyright: ignore[reportDeprecated]
 
 import pytest
 import trio
 
-from cleek._parsers import _NO, _OptionRegistry, make_parser, run as _run
-from cleek._tasks import Context, Task, task_name_from_impl
+from cleek._parsers import _NO, _YES, _OptionRegistry  # pyright: ignore[reportPrivateUsage]
+from cleek._tasks import Context, Task
 
 if TYPE_CHECKING:
-    from inspect import _IntrospectableCallable
+    from conftest import Run  # pyright: ignore[reportImplicitRelativeImport]
 
 
 def noop() -> None:  # pragma: no cover
     pass
-
-
-class Run(Protocol):
-    def __call__(
-        self, *args: object, backend: Literal['asyncio', 'trio'] | None = ...
-    ) -> Callable[['_IntrospectableCallable'], None]: ...
-
-
-@pytest.fixture
-def run() -> Iterator[Run]:
-    ctx = Context()
-
-    def capture_args(
-        *args: object,
-        backend: Literal['asyncio', 'trio'] | None = None,
-    ):
-        def capture_impl(impl: '_IntrospectableCallable'):
-            ctx.task(impl, backend=backend)
-            name = task_name_from_impl(impl)
-            ns = make_parser(ctx).parse_args(
-                (name, *(str(arg) for arg in args))
-            )
-            _run(
-                ctx.tasks[task_name_from_impl(impl)],
-                ns,
-            )
-
-        return capture_impl
-
-    yield capture_args
 
 
 def test_no_args(run: Run) -> None:
@@ -58,7 +27,7 @@ def test_no_args(run: Run) -> None:
 
 def test_pk_bool_def_false_arg_true(run: Run) -> None:
     @run('-a')
-    def _(a: bool = False) -> None:
+    def a(a: bool = False) -> None:
         assert a is True
 
 
@@ -529,8 +498,6 @@ def test_full_name() -> None:
 
 
 def test_check_free_raises_when_passed_reserved_short() -> None:
-    from cleek._parsers import _OptionRegistry
-
     reg = _OptionRegistry()
     reg.reserve_short('-a')
     with pytest.raises(ValueError):
@@ -538,8 +505,6 @@ def test_check_free_raises_when_passed_reserved_short() -> None:
 
 
 def test_check_free_raises_when_passed_reserved_long() -> None:
-    from cleek._parsers import _OptionRegistry
-
     reg = _OptionRegistry()
     reg.reserve_long('--long')
     with pytest.raises(ValueError):
@@ -547,8 +512,6 @@ def test_check_free_raises_when_passed_reserved_long() -> None:
 
 
 def test_find_free_short_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _YES, _OptionRegistry
-
     reg = _OptionRegistry(yes_chars='a', no_chars='A')
     reg.reserve_short('-a')
     with pytest.raises(ValueError):
@@ -556,8 +519,6 @@ def test_find_free_short_raises_when_no_free_lower() -> None:
 
 
 def test_find_free_short_raises_when_no_free_upper() -> None:
-    from cleek._parsers import _NO, _OptionRegistry
-
     reg = _OptionRegistry(no_chars='A')
     reg.reserve_short('-A')
     with pytest.raises(ValueError):
@@ -565,8 +526,6 @@ def test_find_free_short_raises_when_no_free_upper() -> None:
 
 
 def test_find_free_long_raises_when_no_free_lower() -> None:
-    from cleek._parsers import _YES, _OptionRegistry
-
     reg = _OptionRegistry(no_chars='A')
     dest = 'long'
     reg.reserve_long(f'--{dest}')
@@ -656,7 +615,7 @@ def test_multiprocesing() -> None:
     from collections import ChainMap
     from pathlib import Path
 
-    project_dir = Path(__file__).resolve(strict=True).parent
+    project_dir = Path(__file__).resolve(strict=True).parent.parent
     fixtures_dir = project_dir / 'fixtures'
     cleeks_path = fixtures_dir / 'multiprocessing/cleeks'
 
@@ -739,3 +698,24 @@ def test_customize_backend_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = Context()
     _ = ctx.customize(backend='asyncio')(noop)
     assert ctx.tasks['noop'].backend == 'asyncio'
+
+_OldSchoolOptional: TypeAlias = Optional[int]  # pyright: ignore[reportDeprecated]  # noqa: UP045
+
+
+def test_old_school_optional(run: Run) -> None:
+    val = 1
+
+    @run('-a', val)
+    def _(a: _OldSchoolOptional = None) -> None:
+        assert a == val
+
+
+_OldSchoolUnion: TypeAlias = Union[int, None]  # pyright: ignore[reportDeprecated]  # noqa: UP007
+
+
+def test_old_school_union(run: Run) -> None:
+    val = 1
+
+    @run('-a', val)
+    def _(a: _OldSchoolUnion = None) -> None:
+        assert a == val

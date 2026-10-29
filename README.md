@@ -425,3 +425,15 @@ from trio import Path
 @task
 def foo(*a: Path): ...
 ```
+
+Type alias of the other supported parameters
+
+```Python
+from typing import Literal
+
+type Color = Literal['red', 'green', 'blue']
+
+
+@task
+def foo(color: Color): ...
+```
