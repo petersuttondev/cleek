@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
+import sys
 from inspect import signature
 from pathlib import Path, PurePosixPath
-import sys
 from typing import TYPE_CHECKING, Literal, Optional, TypeAlias, Union  # pyright: ignore[reportDeprecated]
 
 import pytest
@@ -699,6 +699,12 @@ def test_customize_backend_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = Context()
     _ = ctx.customize(backend='asyncio')(noop)
     assert ctx.tasks['noop'].backend == 'asyncio'
+
+
+def test_customize_default_group() -> None:
+    ctx = Context()
+    assert ctx.customize().default_group is None
+    assert ctx.customize('foo.bar').default_group == 'foo.bar'
 
 
 _OldSchoolOptional: TypeAlias = Optional[int]  # pyright: ignore[reportDeprecated]  # noqa: UP045

@@ -61,7 +61,7 @@ _P = _ParamSpec('_P')
 
 
 @_final
-class _Customize:
+class Customize:
     def __init__(
         self,
         ctx: 'Context',
@@ -71,7 +71,7 @@ class _Customize:
         backend: _Literal['asyncio', 'trio'] | None = None,
     ) -> None:
         self._ctx: _Final = ctx
-        self._group: _Final = group
+        self.default_group: _Final = group
         self._style: _Final = style
         self._backend: _Final = backend
 
@@ -107,7 +107,7 @@ class _Customize:
         backend: _Literal['asyncio', 'trio'] | None = None,
     ) -> _Callable[_P, _T] | _Callable[[_Callable[_P, _T]], _Callable[_P, _T]]:
         if group is None:
-            group = self._group
+            group = self.default_group
         if style is None:
             style = self._style
         if backend is None:
@@ -136,8 +136,8 @@ class Context:
         *,
         style: str | None = None,
         backend: _Literal['asyncio', 'trio'] | None = None,
-    ) -> _Customize:
-        return _Customize(self, group=group, style=style, backend=backend)
+    ) -> Customize:
+        return Customize(self, group=group, style=style, backend=backend)
 
     @_overload
     def task(
