@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from inspect import signature
 from pathlib import Path, PurePosixPath
+import sys
 from typing import TYPE_CHECKING, Literal, Optional, TypeAlias, Union  # pyright: ignore[reportDeprecated]
 
 import pytest
@@ -699,6 +700,7 @@ def test_customize_backend_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
     _ = ctx.customize(backend='asyncio')(noop)
     assert ctx.tasks['noop'].backend == 'asyncio'
 
+
 _OldSchoolOptional: TypeAlias = Optional[int]  # pyright: ignore[reportDeprecated]  # noqa: UP045
 
 
@@ -719,3 +721,35 @@ def test_old_school_union(run: Run) -> None:
     @run('-a', val)
     def _(a: _OldSchoolUnion = None) -> None:
         assert a == val
+
+
+def test_unsupported_signature_error() -> None:
+    import os
+    import subprocess
+    from collections import ChainMap
+    from pathlib import Path
+
+    project_dir = Path(__file__).resolve(strict=True).parent.parent
+    fixtures_dir = project_dir / 'fixtures'
+    cleeks_path = fixtures_dir / 'unsupported_signature/cleeks.py'
+
+    proc = subprocess.run(
+        (sys.executable, '-m', 'cleek', 'foo'),
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        env=ChainMap(
+            {
+                'CLEEKS_PATH': str(cleeks_path),
+                'COLUMNS': '80',
+                'NO_COLOR': '1',
+            },
+            os.environ,
+        ),
+        check=False,
+        text=True,
+    )
+
+    assert proc.returncode != 0
+    assert proc.stdout == ''
+    assert 'Your task function is not supported yet.' in proc.stderr
+    assert '(a: cleeks.Foo) -> None' in proc.stderr

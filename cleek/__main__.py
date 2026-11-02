@@ -115,7 +115,7 @@ def _excepthook(
     print(
         '\n',
         Panel(
-            f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function siguature below and I'll add support:\n\n{value.signature}\n",
+            f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function signature below and I'll add support:\n\n{value.signature}\n",
             title=':warning: Unsupported Task Function :warning:',
         ),
         '\n',
@@ -136,10 +136,9 @@ def main() -> None:
     from cleek import _ctx as ctx
     from cleek._parsers import make_parser
 
+    sys.excepthook = _excepthook
     parser = make_parser(ctx)
     ns = parser.parse_args()
-
-    sys.excepthook = _excepthook
 
     if ns.task is None:
         print_tasks(ctx.tasks)
