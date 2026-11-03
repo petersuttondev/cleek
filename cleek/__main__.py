@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING as _TYPE_CHECKING
 
 if _TYPE_CHECKING:
     from pathlib import Path as _Path
-    from types import ModuleType as _ModuleType, TracebackType as _TracebackType
-    from typing import Final as _Final
+    from types import ModuleType as _ModuleType
 
+    from cleek._parsers import UnsupportedSignature as _UnsupportedSignature
     from cleek._tasks import Task as _Task
 
 
@@ -66,7 +66,7 @@ def _load_tasks() -> None:
         if cleeks is None:
             raise FileNotFoundError('Cannot find cleeks')
         parent_path = root_path.parent
-    from cleek import _ctx
+    from cleek import _ctx  # pyright: ignore[reportPrivateUsage]
 
     if _ctx.prepend_to_path:
         sys.path.insert(0, str(parent_path))
@@ -95,29 +95,20 @@ def print_tasks(tasks: 'dict[str, _Task]') -> None:
     console.print(table)
 
 
-_prev_excepthook: '_Final' = _sys.excepthook
-
-
-def _excepthook(
-    type: type[BaseException],
-    value: BaseException,
-    traceback: '_TracebackType',
-) -> None:
-    _prev_excepthook(type, value, traceback)
-    from cleek._parsers import UnsupportedSignature
-
-    if not isinstance(value, UnsupportedSignature):
-        return
-
+def _print_unsupported_signature(error: _UnsupportedSignature) -> None:
     from rich import print
     from rich.panel import Panel
 
+    message = (
+        'Your task function is not supported yet.'
+        ' [u][link=https://github.com/petersuttondev/cleek/issues]Create an'
+        ' issue on GitHub[/link][/u] containing the function signature below'
+        f" and I'll add support:\n\n{error.signature}\n"
+    )
+
     print(
         '\n',
-        Panel(
-            f"Your task function is not supported yet. [u][link=https://github.com/petersuttondev/cleek/issues]Create an issue on GitHub[/link][/u] containing the function signature below and I'll add support:\n\n{value.signature}\n",
-            title=':warning: Unsupported Task Function :warning:',
-        ),
+        Panel(message, title=':warning: Unsupported Task Function :warning:'),
         '\n',
         file=_sys.stderr,
     )
@@ -133,11 +124,16 @@ def main() -> None:
             print(error, file=sys.stderr)
         raise SystemExit(1)
 
-    from cleek import _ctx as ctx
-    from cleek._parsers import make_parser
+    from cleek import _ctx as ctx  # pyright: ignore[reportPrivateUsage]
+    from cleek._parsers import UnsupportedSignature, make_parser
 
-    sys.excepthook = _excepthook
-    parser = make_parser(ctx)
+    try:
+        parser = make_parser(ctx)
+    except UnsupportedSignature as error:
+        sys.__excepthook__(type(error), error, error.__traceback__)
+        _print_unsupported_signature(error)
+        raise SystemExit(1) from error
+
     ns = parser.parse_args()
 
     if ns.task is None:
