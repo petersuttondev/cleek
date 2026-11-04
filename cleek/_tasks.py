@@ -72,7 +72,7 @@ class Customize:
     ) -> None:
         self._ctx: _Final = ctx
         self.default_group: _Final = group
-        self._style: _Final = style
+        self.default_style: _Final = style
         self._backend: _Final = backend
 
     @_overload
@@ -109,7 +109,7 @@ class Customize:
         if group is None:
             group = self.default_group
         if style is None:
-            style = self._style
+            style = self.default_style
         if backend is None:
             backend = self._backend
         return self._ctx.task(

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cleek"
-version = "1.4.1"
+version = "1.5.0"
 authors = [
   { name="Peter Sutton", email="peter@foxdogstudio.com" },
 ]
@@ -37,7 +37,7 @@ dependencies = [
 clk = "cleek.__main__:main"
 
 [dependency-groups]
-dev = ["build", "pytest"]
+dev = ["build", "pytest", "twine"]
 
 [tool.ruff]
 line-length = 80

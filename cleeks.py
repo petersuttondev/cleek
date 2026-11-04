@@ -84,7 +84,55 @@ def coverage(run: bool = False, report: bool = True) -> None:
 def test() -> None:
     import os
 
-    os.execlp('pytest', 'pytest')
+    os.chdir(_get_project_dir())
+    os.execlp('venv/bin/pytest', 'pytest')
+
+
+@task
+def build(clean: bool = True) -> None:
+    import subprocess
+
+    project_dir = _get_project_dir()
+
+    if clean:
+        import shutil
+        from contextlib import suppress
+
+        with suppress(FileNotFoundError):
+            shutil.rmtree(project_dir / 'dist')
+
+    try:
+        subprocess.run(
+            (project_dir / 'venv/bin/python', '-m', 'build'),
+            stdin=subprocess.DEVNULL,
+            cwd=project_dir,
+            check=True,
+        )
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(error.returncode) from error
+
+
+@task
+def upload() -> None:
+    import subprocess
+
+    project_dir = _get_project_dir()
+
+    try:
+        subprocess.run(
+            (
+                project_dir / 'venv/bin/python',
+                '-m',
+                'twine',
+                'upload',
+                *(project_dir / 'dist').iterdir(),
+            ),
+            stdin=subprocess.DEVNULL,
+            cwd=project_dir,
+            check=True,
+        )
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(error.returncode) from error
 
 
 # -- Utilities -----------------------------------------------------------------
@@ -106,10 +154,10 @@ def _args(*args: _Args) -> list[str]:
     return flat
 
 
-_project_dir: 'Path | None' = None
+_project_dir: Path | None = None
 
 
-def _get_project_dir() -> 'Path':
+def _get_project_dir() -> Path:
     global _project_dir
     if _project_dir is None:
         from pathlib import Path

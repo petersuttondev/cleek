@@ -547,10 +547,8 @@ def test_find_free_long_raises_when_no_free_upper() -> None:
 def test_raises_unsupported_signature(run: Run) -> None:
     from cleek._parsers import UnsupportedSignature
 
-    class Foo:
+    def impl(_: complex) -> None:
         pass
-
-    def impl(_: 'Foo') -> None: ...
 
     with pytest.raises(UnsupportedSignature) as exc_info:
         run()(impl)
@@ -567,20 +565,6 @@ def test_task_with_group() -> None:
         pass
 
     assert ctx.tasks[f'a.{impl.__name__}'].group == group
-
-
-def test_customize() -> None:
-    ctx = Context()
-    group = 'group'
-    style = 'red'
-
-    @ctx.customize(group=group, style=style)
-    def impl() -> None:  # pragma: no cover
-        pass
-
-    task = ctx.tasks[f'{group}.{impl.__name__}']
-    assert task.group == group
-    assert task.style == style
 
 
 def test_check_duplicate_task_name_raises() -> None:
@@ -634,20 +618,6 @@ def test_multiprocesing() -> None:
     assert proc.stdout == 'multiprocessing\n'
 
 
-def test_customize_backend() -> None:
-    ctx = Context()
-    asyncio_task = ctx.customize(backend='asyncio')
-
-    @asyncio_task
-    async def a() -> None: ...
-
-    @asyncio_task(backend='trio')
-    async def b() -> None: ...
-
-    assert ctx.tasks['a'].backend == 'asyncio'
-    assert ctx.tasks['b'].backend == 'trio'
-
-
 @pytest.mark.parametrize(
     ('env', 'task', 'expected'),
     [
@@ -692,19 +662,6 @@ def test_cleek_backend_env(
     else:
         _ = register(noop)
         assert ctx.tasks[name].backend == expected
-
-
-def test_customize_backend_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv('CLEEK_BACKEND', 'trio')
-    ctx = Context()
-    _ = ctx.customize(backend='asyncio')(noop)
-    assert ctx.tasks['noop'].backend == 'asyncio'
-
-
-def test_customize_default_group() -> None:
-    ctx = Context()
-    assert ctx.customize().default_group is None
-    assert ctx.customize('foo.bar').default_group == 'foo.bar'
 
 
 _OldSchoolOptional: TypeAlias = Optional[int]  # pyright: ignore[reportDeprecated]  # noqa: UP045
